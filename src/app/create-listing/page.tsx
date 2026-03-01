@@ -341,27 +341,38 @@ export default function CreateListingPage() {
           {/* Images */}
           <div>
             <label className="block text-white font-medium mb-2">商品详情图片</label>
-            <div className="flex gap-2 mb-2">
+            <div className="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center hover:border-violet-500 transition-colors">
               <input
-                type="text"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
-                placeholder="输入 emoji 如: ⚔️"
-                onKeyDown={(e) => e.key === 'Enter' && addImage()}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={async (e) => {
+                  const files = e.target.files;
+                  if (files) {
+                    for (let i = 0; i < files.length; i++) {
+                      const file = files[i];
+                      const reader = new FileReader();
+                      reader.onload = (event) => {
+                        const result = event.target?.result as string;
+                        setFormData({ ...formData, images: [...formData.images, result] });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }
+                }}
+                className="hidden"
+                id="image-upload"
               />
-              <button
-                type="button"
-                onClick={addImage}
-                className="px-6 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-500"
-              >
-                添加
-              </button>
+              <label htmlFor="image-upload" className="cursor-pointer">
+                <div className="text-4xl mb-2">📁</div>
+                <p className="text-slate-400">点击上传图片</p>
+                <p className="text-slate-500 text-sm mt-1">支持 PNG、JPG、GIF</p>
+              </label>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 mt-4">
               {formData.images.map((img, i) => (
                 <div key={i} className="relative">
-                  <span className="text-4xl">{img}</span>
+                  <img src={img} alt="" className="w-20 h-20 object-cover rounded-lg" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
