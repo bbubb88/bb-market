@@ -111,15 +111,11 @@ export default function Header() {
                 {language === 'ko' ? '판매' : '挂售'}
               </Link>
             </div>
-              className="hidden sm:inline-block px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
-            >
-              {language === 'ko' ? '판매' : '挂售'}
-            </Link>
 
             {/* Login Button */}
             <Link
               href="/login"
-              className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-medium text-white bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
             >
               {t('nav.login')}
             </Link>
