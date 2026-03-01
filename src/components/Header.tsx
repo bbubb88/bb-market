@@ -25,7 +25,6 @@ export default function Header() {
   const navItems = [
     { key: 'home', href: '/' },
     { key: 'dashboard', href: '/dashboard', label: '用户中心' },
-    { key: 'create-listing', href: '/create-listing', label: '卖家中心' },
     { key: 'help', href: '/help' },
   ];
 
