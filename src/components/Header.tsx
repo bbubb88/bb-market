@@ -96,17 +96,21 @@ export default function Header() {
               <span>{currency}</span>
             </button>
 
-            {/* Buy Button */}
-            <Link
-              href="/select-game"
-              className="hidden sm:inline-block px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
-            >
-              {language === 'ko' ? '구매' : '购买'}
-            </Link>
-
-            {/* Sell Button */}
-            <Link
-              href="/create-listing"
+            {/* Buy & Sell Buttons */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Link
+                href="/select-game"
+                className="px-4 py-2 text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
+              >
+                {language === 'ko' ? '구매' : '购买'}
+              </Link>
+              <Link
+                href="/create-listing"
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 hover:bg-violet-700 rounded-lg transition-colors"
+              >
+                {language === 'ko' ? '판매' : '挂售'}
+              </Link>
+            </div>
               className="hidden sm:inline-block px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors"
             >
               {language === 'ko' ? '판매' : '挂售'}
