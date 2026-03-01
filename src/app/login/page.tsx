@@ -2,11 +2,87 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 
 export default function LoginPage() {
   const { language } = useI18n();
-  const [step, setStep] = useState<'select' | 'email'>('select');
+  const router = useRouter();
+  const [step, setStep] = useState<'select' | 'email' | 'login'>('select');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || '登录失败');
+        return;
+      }
+
+      // 保存 token
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // 跳转到用户中心
+      router.push('/dashboard');
+    } catch (err) {
+      setError('网络错误，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || '注册失败');
+        return;
+      }
+
+      // 注册成功，保存 token
+      localStorage.setItem('access_token', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      // 跳转到用户中心
+      router.push('/dashboard');
+    } catch (err) {
+      setError('网络错误，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDiscordLogin = () => {
+    // Discord OAuth 稍后实现
+    alert('Discord 登录功能即将上线，请使用邮箱注册');
+    setStep('email');
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
@@ -28,7 +104,7 @@ export default function LoginPage() {
             <div className="space-y-4">
               {/* Discord Login */}
               <button
-                onClick={() => setStep('email')}
+                onClick={handleDiscordLogin}
                 className="w-full p-4 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl transition-colors"
               >
                 <div className="flex items-center justify-center gap-3">
@@ -77,30 +153,59 @@ export default function LoginPage() {
         {step === 'email' && (
           <div className="space-y-4">
             <div className="p-4 bg-violet-900/30 border border-violet-500/30 rounded-xl">
-              <p className="text-white font-medium mb-2">📧 邮箱注册/绑定</p>
+              <p className="text-white font-medium mb-2">📧 邮箱登录/注册</p>
               <p className="text-slate-400 text-sm">
-                输入您的邮箱，后续可以绑定 Discord 账号
+                输入邮箱和密码进行登录或注册
               </p>
             </div>
-            
-            <input
-              type="email"
-              placeholder="your@email.com"
-              className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
-            />
-            
-            <input
-              type="password"
-              placeholder="设置密码"
-              className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500"
-            />
 
-            <button className="w-full py-4 bg-violet-600 hover:bg-violet-500 text-white font-semibold rounded-xl transition-colors">
-              {language === 'ko' ? '계정 생성' : '创建账号'}
-            </button>
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+            
+            <form onSubmit={handleLogin}>
+              <input
+                type="email"
+                placeholder="your@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 mb-3"
+                required
+              />
+              
+              <input
+                type="password"
+                placeholder="密码"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 mb-4"
+                required
+                minLength={6}
+              />
+
+              <div className="flex gap-3">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors"
+                >
+                  {loading ? '处理中...' : '登录'}
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleRegister}
+                  disabled={loading}
+                  className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors"
+                >
+                  {loading ? '处理中...' : '注册'}
+                </button>
+              </div>
+            </form>
             
             <button
-              onClick={() => setStep('select')}
+              onClick={() => { setStep('select'); setError(''); }}
               className="w-full py-3 text-slate-400 hover:text-white transition-colors"
             >
               ← 返回
