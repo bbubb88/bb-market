@@ -20,19 +20,61 @@ interface Listing {
   createdAt: string;
 }
 
+interface Order {
+  id: string;
+  listingId: string;
+  buyerId: string;
+  sellerId: string;
+  price: number;
+  fee: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+  Listing?: {
+    title: string;
+    images: string[];
+    serverId: string;
+    type: string;
+  };
+}
+
 export default function DashboardPage() {
   const { language, t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>('buyer');
   const [buyerSubTab, setBuyerSubTab] = useState<BuyerSubTab>('orders');
   const [sellerSubTab, setSellerSubTab] = useState<SellerSubTab>('listings');
   const [listings, setListings] = useState<Listing[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   
-  const currentUserId = 'test-seller-1';
+  // 从 localStorage 获取用户信息
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : null;
+  const userId = user?.id || null;
 
   useEffect(() => {
     loadData();
-  }, [sellerSubTab]);
+    if (buyerSubTab === 'orders' || buyerSubTab === 'purchases') {
+      loadOrders();
+    }
+  }, [sellerSubTab, buyerSubTab]);
+
+  const loadOrders = async () => {
+    if (!userId) return;
+    try {
+      const res = await fetch('/api/order/list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setOrders(data);
+      }
+    } catch (error) {
+      console.error('Failed to load orders:', error);
+    }
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -138,12 +180,45 @@ export default function DashboardPage() {
                   <button onClick={() => setBuyerSubTab('purchases')} className={`px-4 py-2 rounded-lg font-medium ${buyerSubTab === 'purchases' ? 'bg-violet-600 text-white' : 'bg-slate-700 text-slate-400'}`}>🛍️ 已购买</button>
                   <button onClick={() => setBuyerSubTab('favorites')} className={`px-4 py-2 rounded-lg font-medium ${buyerSubTab === 'favorites' ? 'bg-violet-600 text-white' : 'bg-slate-700 text-slate-400'}`}>⭐ 收藏夹</button>
                 </div>
-                <div className="text-center py-12 text-slate-400">
-                  <p className="text-4xl mb-4">📋</p><p>暂无订单</p>
-                </div>
-                <div className="mt-6 text-center">
-                  <Link href="/select-game" className="inline-block px-6 py-3 bg-violet-600 text-white font-medium rounded-lg">去购物</Link>
-                </div>
+                
+                {!userId ? (
+                  <div className="text-center py-12 text-slate-400">
+                    <p className="text-4xl mb-4">🔐</p><p>请先登录</p>
+                    <Link href="/login" className="mt-4 inline-block px-6 py-3 bg-violet-600 text-white font-medium rounded-lg">去登录</Link>
+                  </div>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-12 text-slate-400">
+                    <p className="text-4xl mb-4">📋</p><p>暂无订单</p>
+                    <Link href="/select-game" className="inline-block mt-4 px-6 py-3 bg-violet-600 text-white font-medium rounded-lg">去购物</Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {orders.map((order) => (
+                      <div key={order.id} className="flex items-center gap-4 p-4 bg-slate-700/50 rounded-xl">
+                        <div className="w-14 h-14 bg-slate-600 rounded-lg flex items-center justify-center text-2xl">
+                          {order.Listing?.type === 'ACCOUNT' ? '📋' : order.Listing?.type === 'ITEM' ? '🎮' : '💰'}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="text-white font-medium">{order.Listing?.title || '商品'}</h4>
+                          <p className="text-slate-400 text-sm">订单号: {order.id.slice(0, 8)}...</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-white font-bold">{order.price} USDT</p>
+                          <span className={`text-xs px-2 py-1 rounded ${
+                            order.status === 'PENDING' ? 'bg-yellow-500/20 text-yellow-400' :
+                            order.status === 'PAID' ? 'bg-blue-500/20 text-blue-400' :
+                            order.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>
+                            {order.status === 'PENDING' ? '待付款' :
+                             order.status === 'PAID' ? '已付款' :
+                             order.status === 'COMPLETED' ? '已完成' : '已取消'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             
