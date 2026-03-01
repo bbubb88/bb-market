@@ -38,9 +38,7 @@ export default function CreateListingPage() {
     gameId: '',
     serverId: '',
     title: '',
-    titleKo: '',
     description: '',
-    descriptionKo: '',
     price: '',
     level: '',
     amount: '',
@@ -167,9 +165,7 @@ export default function CreateListingPage() {
         serverId: formData.serverId || null,
         type: formData.type,
         title: formData.title,
-        titleKo: formData.titleKo || null,
         description: formData.description || null,
-        descriptionKo: formData.descriptionKo || null,
         price: parseFloat(formData.price),
         level: formData.level ? parseInt(formData.level) : null,
         amount: formData.amount ? parseInt(formData.amount) : null,
@@ -288,18 +284,6 @@ export default function CreateListingPage() {
             />
           </div>
 
-          {/* Title (Korean) */}
-          <div>
-            <label className="block text-white font-medium mb-2">韩文标题</label>
-            <input
-              type="text"
-              value={formData.titleKo}
-              onChange={(e) => setFormData({ ...formData, titleKo: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
-              placeholder="상품 제목 (韩文)"
-            />
-          </div>
-
           {/* Description */}
           <div>
             <label className="block text-white font-medium mb-2">描述</label>
@@ -308,17 +292,6 @@ export default function CreateListingPage() {
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500 h-32"
               placeholder="商品详细描述"
-            />
-          </div>
-
-          {/* Description (Korean) */}
-          <div>
-            <label className="block text-white font-medium mb-2">韩文描述</label>
-            <textarea
-              value={formData.descriptionKo}
-              onChange={(e) => setFormData({ ...formData, descriptionKo: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500 h-32"
-              placeholder="상품 설명 (韩文)"
             />
           </div>
 
