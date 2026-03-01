@@ -41,18 +41,19 @@ interface ListingData {
   id: string | number;
   type: string;
   title: string;
-  titleKo: string | null | undefined;
-  description: string | null | undefined;
-  descriptionKo: string | null | undefined;
+  titleKo?: string | null;
+  description?: string | null;
+  descriptionKo?: string | null;
   price: number;
-  level: number | null | undefined;
-  amount: number | null | undefined;
+  level?: number | null;
+  amount?: number | null;
   images: string[];
-  badge: string | null | undefined;
+  badge?: string | null;
   server?: string;
   serverId?: string | null;
   status?: string;
   createdAt?: string;
+  seller?: string;
 }
 
 interface ListingCardProps {
