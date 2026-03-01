@@ -11,6 +11,7 @@ export default function HIT2Page() {
   const [enhanceResult, setEnhanceResult] = useState<'success' | 'fail' | null>(null);
   const [transformActive, setTransformActive] = useState(false);
   const [selectedTransform, setSelectedTransform] = useState(0);
+  const [particles, setParticles] = useState<Array<{id: number, x: number, y: number, color: string}>>([]);
 
   // 强化成功率
   const successRates: Record<number, number> = {
@@ -19,13 +20,41 @@ export default function HIT2Page() {
     11: 30, 12: 20, 13: 10, 14: 5, 15: 1
   };
 
+  // 强化特效颜色
+  const enhanceColors: Record<number, { primary: string; secondary: string; glow: string }> = {
+    0: { primary: '#6b7280', secondary: '#9ca3af', glow: 'rgba(156, 163, 175, 0.5)' },
+    1: { primary: '#6b7280', secondary: '#9ca3af', glow: 'rgba(156, 163, 175, 0.5)' },
+    2: { primary: '#6b7280', secondary: '#9ca3af', glow: 'rgba(156, 163, 175, 0.5)' },
+    3: { primary: '#6b7280', secondary: '#9ca3af', glow: 'rgba(156, 163, 175, 0.5)' },
+    4: { primary: '#3b82f6', secondary: '#60a5fa', glow: 'rgba(96, 165, 250, 0.5)' },
+    5: { primary: '#3b82f6', secondary: '#60a5fa', glow: 'rgba(96, 165, 250, 0.6)' },
+    6: { primary: '#3b82f6', secondary: '#60a5fa', glow: 'rgba(96, 165, 250, 0.7)' },
+    7: { primary: '#8b5cf6', secondary: '#a78bfa', glow: 'rgba(167, 139, 250, 0.7)' },
+    8: { primary: '#8b5cf6', secondary: '#a78bfa', glow: 'rgba(167, 139, 250, 0.8)' },
+    9: { primary: '#ec4899', secondary: '#f472b6', glow: 'rgba(244, 114, 182, 0.8)' },
+    10: { primary: '#f59e0b', secondary: '#fbbf24', glow: 'rgba(251, 191, 36, 0.8)' },
+    11: { primary: '#ef4444', secondary: '#f87171', glow: 'rgba(248, 113, 113, 0.9)' },
+    12: { primary: '#ef4444', secondary: '#fbbf24', glow: 'rgba(251, 191, 36, 1)' },
+    13: { primary: '#dc2626', secondary: '#fb923c', glow: 'rgba(252, 129, 57, 1)' },
+    14: { primary: '#991b1b', secondary: '#f59e0b', glow: 'rgba(245, 158, 11, 1)' },
+    15: { primary: '#7f1d1d', secondary: '#fbbf24', glow: 'rgba(251, 191, 36, 1)' },
+  };
+
   const handleEnhance = () => {
     if (enhanceLevel >= 15 || isEnhancing) return;
     
     setIsEnhancing(true);
     setEnhanceResult(null);
     
-    // 模拟强化过程
+    // 生成粒子
+    const newParticles = Array.from({ length: 30 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      color: enhanceColors[enhanceLevel]?.primary || '#fff'
+    }));
+    setParticles(newParticles);
+    
     setTimeout(() => {
       const successRate = successRates[enhanceLevel + 1] || 50;
       const random = Math.random() * 100;
@@ -36,54 +65,110 @@ export default function HIT2Page() {
       } else {
         setEnhanceResult('fail');
       }
+      setParticles([]);
       setIsEnhancing(false);
-    }, 1500);
+    }, 2000);
   };
 
-  const getEnhanceColor = (level: number) => {
-    if (level >= 12) return 'from-red-500 via-orange-500 to-yellow-500';
-    if (level >= 10) return 'from-purple-500 via-pink-500 to-red-500';
-    if (level >= 7) return 'from-blue-500 via-cyan-500 to-green-500';
-    if (level >= 4) return 'from-slate-500 via-slate-400 to-slate-300';
-    return 'from-slate-700 via-slate-600 to-slate-500';
-  };
-
-  // 不灭变身效果
+  // 不灭变身 - HIT2 风格
   const transforms = [
-    { name: '불꽃의 분노', nameKo: '火焰之怒', nameZh: '火焰之怒', emoji: '🔥', colors: ['#ff6b6b', '#ffd93d'] },
-    { name: '얼음 심장', nameKo: '冰霜之心', nameZh: '冰霜之心', emoji: '❄️', colors: ['#74b9ff', '#0984e3'] },
-    { name: '번개의 속도', nameKo: '雷电之力', nameZh: '雷电之力', emoji: '⚡', colors: ['#ffeaa7', '#fdcb6e'] },
-    { name: '어둠의 힘', nameKo: '黑暗之力', nameZh: '黑暗之力', emoji: '🌑', colors: ['#2d3436', '#636e72'] },
-    { name: '신성한 빛', nameKo: '神圣之光', nameZh: '神圣之光', emoji: '✨', colors: ['#ffeaa7', '#ffffff'] },
+    { 
+      name: ' flames', nameKo: '화염', nameZh: '火焰', 
+      emoji: '🔥', 
+      bg: 'linear-gradient(135deg, #ff4500, #ff8c00, #ffd700)',
+      particles: ['#ff4500', '#ff6b00', '#ff8c00', '#ffa500', '#ffd700']
+    },
+    { 
+      name: 'Frost', nameKo: '서리', nameZh: '冰霜', 
+      emoji: '❄️', 
+      bg: 'linear-gradient(135deg, #00bfff, #87ceeb, #e0ffff)',
+      particles: ['#00bfff', '#1e90ff', '#87ceeb', '#b0e0e6', '#e0ffff']
+    },
+    { 
+      name: 'Thunder', nameKo: '번개', nameZh: '雷电', 
+      emoji: '⚡', 
+      bg: 'linear-gradient(135deg, #ffd700, #ffff00, #fffacd)',
+      particles: ['#ffd700', '#ffec8b', '#ffff00', '#fffacd', '#ffffff']
+    },
+    { 
+      name: 'Dark', nameKo: '어둠', nameZh: '黑暗', 
+      emoji: '🌑', 
+      bg: 'linear-gradient(135deg, #2d3436, #636e72, #b2bec3)',
+      particles: ['#2d3436', '#636e72', '#74b9ff', '#a29bfe', '#dfe6e9']
+    },
+    { 
+      name: 'Light', nameKo: '빛', nameZh: '光明', 
+      emoji: '✨', 
+      bg: 'linear-gradient(135deg, #ffeaa7, #fdcb6e, #ffffff)',
+      particles: ['#ffeaa7', '#fdcb6e', '#ffffff', '#fffacd', '#ffffed']
+    },
   ];
 
   return (
     <div className="min-h-screen py-8">
-      {/* 强化特效动画 */}
       <style jsx>{`
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(255, 107, 107, 0.5); }
-          50% { box-shadow: 0 0 60px rgba(255, 107, 107, 0.8), 0 0 100px rgba(255, 217, 61, 0.4); }
+        @keyframes fire-glow {
+          0%, 100% { 
+            box-shadow: 0 0 20px var(--glow), 0 0 40px var(--glow);
+            filter: brightness(1);
+          }
+          50% { 
+            box-shadow: 0 0 40px var(--glow), 0 0 80px var(--glow), 0 0 120px var(--glow);
+            filter: brightness(1.2);
+          }
         }
-        @keyframes rainbow-glow {
-          0% { filter: hue-rotate(0deg); }
-          100% { filter: hue-rotate(360deg); }
+        @keyframes float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-10px) rotate(5deg); }
         }
-        @keyframes transform-active {
-          0%, 100% { transform: scale(1); opacity: 1; }
-          50% { transform: scale(1.1); opacity: 0.8; }
+        @keyframes particle-rise {
+          0% { 
+            transform: translateY(100%) scale(0); 
+            opacity: 0; 
+          }
+          10% { 
+            opacity: 1; 
+          }
+          100% { 
+            transform: translateY(-200%) scale(1); 
+            opacity: 0; 
+          }
         }
-        @keyframes particle-float {
-          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-          100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        @keyframes rainbow-shift {
+          0% { filter: hue-rotate(0deg) brightness(1.5); }
+          50% { filter: hue-rotate(180deg) brightness(2); }
+          100% { filter: hue-rotate(360deg) brightness(1.5); }
         }
-        .enhance-glow { animation: pulse-glow 1.5s ease-in-out infinite; }
-        .rainbow-anim { animation: rainbow-glow 3s linear infinite; }
-        .transform-active { animation: transform-active 2s ease-in-out infinite; }
-        
-        .enhance-12 { 
-          background: linear-gradient(135deg, #ff6b6b, #ffd93d);
-          animation: pulse-glow 1s ease-in-out infinite;
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+          20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        @keyframes transform-pulse {
+          0%, 100% { 
+            transform: scale(1); 
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+          }
+          50% { 
+            transform: scale(1.05); 
+            box-shadow: 0 0 60px rgba(255, 215, 0, 0.8), 0 0 100px rgba(255, 215, 0, 0.4);
+          }
+        }
+        .enhance-fire {
+          animation: fire-glow 1s ease-in-out infinite;
+          --glow: rgba(255, 69, 0, 0.8);
+        }
+        .enhance-rainbow {
+          animation: rainbow-shift 2s linear infinite;
+        }
+        .enhance-shake {
+          animation: shake 0.5s ease-in-out;
+        }
+        .transform-pulse {
+          animation: transform-pulse 2s ease-in-out infinite;
+        }
+        .particle {
+          animation: particle-rise 2s ease-out infinite;
         }
       `}</style>
 
@@ -114,55 +199,81 @@ export default function HIT2Page() {
           </Link>
         </div>
 
-        {/* 强化模拟器 */}
+        {/* 武器强化模拟器 */}
         <div className="mb-12">
           <h3 className="text-2xl font-bold text-white text-center mb-6">⚔️ {language === 'ko' ? '강화 시뮬레이터' : '武器强化模拟器'}</h3>
           
           <div className="max-w-md mx-auto">
             {/* 武器展示 */}
-            <div className={`relative p-12 rounded-2xl bg-gradient-to-br ${getEnhanceColor(enhanceLevel)} ${enhanceLevel >= 12 ? 'enhance-12' : ''} transition-all duration-500`}>
-              {/* 强化等级显示 */}
-              <div className="absolute top-4 left-4 px-4 py-2 bg-black/50 rounded-full">
-                <span className="text-white font-bold">+{enhanceLevel}</span>
+            <div 
+              className={`relative p-12 rounded-2xl transition-all duration-500 ${
+                isEnhancing ? 'enhance-shake' : ''
+              } ${
+                enhanceLevel >= 12 ? 'enhance-fire' : ''
+              } ${
+                enhanceLevel >= 13 ? 'enhance-rainbow' : ''
+              }`}
+              style={{
+                background: `linear-gradient(135deg, ${enhanceColors[enhanceLevel]?.primary}, ${enhanceColors[enhanceLevel]?.secondary})`,
+                boxShadow: `0 0 ${enhanceLevel >= 12 ? 60 : 30}px ${enhanceColors[enhanceLevel]?.glow}`
+              }}
+            >
+              {/* 粒子效果 */}
+              {particles.map((p) => (
+                <div
+                  key={p.id}
+                  className="particle absolute w-3 h-3 rounded-full"
+                  style={{
+                    left: `${p.x}%`,
+                    bottom: '20%',
+                    background: p.color,
+                  }}
+                />
+              ))}
+              
+              {/* 强化等级 */}
+              <div className="absolute top-4 left-4 px-4 py-2 bg-black/60 rounded-full">
+                <span className="text-white font-bold text-xl">+{enhanceLevel}</span>
               </div>
               
               {/* 武器图标 */}
-              <div className={`text-8xl text-center transform transition-all ${isEnhancing ? 'scale-150 rotate-12' : ''} ${enhanceLevel >= 12 ? 'rainbow-anim' : ''}`}>
+              <div className={`text-8xl text-center transition-all duration-300 ${
+                isEnhancing ? 'scale-150' : 'scale-100'
+              } ${enhanceLevel >= 13 ? 'enhance-rainbow' : ''}`}>
                 ⚔️
               </div>
               
-              {/* 成功/失败特效 */}
+              {/* 成功/失败 */}
               {enhanceResult === 'success' && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-6xl animate-bounce">✨</span>
                 </div>
               )}
               {enhanceResult === 'fail' && (
-                <div className="absolute inset-0 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                   <span className="text-6xl">💥</span>
                 </div>
               )}
             </div>
 
-            {/* 强化按钮 */}
+            {/* 按钮 */}
             <div className="mt-6 text-center">
               <button
                 onClick={handleEnhance}
                 disabled={enhanceLevel >= 15 || isEnhancing}
-                className={`px-8 py-4 rounded-xl font-bold text-lg transition-all ${
+                className={`px-10 py-5 rounded-xl font-bold text-xl transition-all ${
                   enhanceLevel >= 15 
                     ? 'bg-slate-600 text-slate-400 cursor-not-allowed'
                     : isEnhancing
                     ? 'bg-violet-600 text-white animate-pulse'
-                    : 'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:scale-105'
+                    : 'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:scale-105 hover:shadow-lg hover:shadow-violet-500/50'
                 }`}
               >
                 {isEnhancing ? (language === 'ko' ? '강화 중...' : '强化中...') : 
                  enhanceLevel >= 15 ? (language === 'ko' ? '최대 강화' : '已满级') :
-                 (language === 'ko' ? '강화하기' : '开始强化')}
+                 (language === 'ko' ? '강화하기 (+' + (enhanceLevel + 1) + ')' : '开始强化 (+' + (enhanceLevel + 1) + ')')}
               </button>
               
-              {/* 成功率 */}
               {enhanceLevel < 15 && (
                 <p className="mt-3 text-slate-400">
                   {language === 'ko' ? '성공률' : '成功率'}: <span className="text-emerald-400 font-bold">{successRates[enhanceLevel + 1]}%</span>
@@ -170,16 +281,17 @@ export default function HIT2Page() {
               )}
             </div>
 
-            {/* 强化历史 */}
+            {/* 强化进度条 */}
             <div className="mt-6 p-4 bg-slate-800/50 rounded-xl">
-              <div className="flex flex-wrap gap-2 justify-center">
+              <div className="flex flex-wrap gap-1 justify-center">
                 {Array.from({ length: 15 }, (_, i) => (
                   <div
                     key={i}
-                    className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                    className={`w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold transition-all ${
                       i < enhanceLevel
-                        ? i >= 11 ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white'
-                        : i >= 7 ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white'
+                        ? i >= 11 ? 'bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/50'
+                        : i >= 7 ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/50'
+                        : i >= 4 ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/50'
                         : 'bg-slate-600 text-white'
                         : 'bg-slate-700 text-slate-500'
                     }`}
@@ -192,52 +304,51 @@ export default function HIT2Page() {
           </div>
         </div>
 
-        {/* 不灭变身特效展示 */}
+        {/* 不灭变身 */}
         <div className="mb-12">
           <h3 className="text-2xl font-bold text-white text-center mb-6">🦸 {language === 'ko' ? '불멸 변환' : '不灭变身'}</h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          {/* 选择按钮 */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6">
             {transforms.map((t, i) => (
               <button
                 key={i}
                 onClick={() => setSelectedTransform(i)}
-                className={`p-4 rounded-xl border-2 transition-all ${
+                className={`p-3 rounded-xl border-2 transition-all ${
                   selectedTransform === i
-                    ? 'border-violet-500 bg-violet-500/20 scale-105'
-                    : 'border-slate-700 bg-slate-800/50 hover:border-slate-600'
+                    ? 'border-white scale-105'
+                    : 'border-slate-600 hover:border-slate-400'
                 }`}
+                style={{ background: t.bg }}
               >
-                <div className="text-3xl text-center mb-2">{t.emoji}</div>
-                <div className="text-white text-sm text-center">
+                <div className="text-2xl text-center">{t.emoji}</div>
+                <div className="text-center text-sm font-bold text-slate-800 mt-1">
                   {language === 'ko' ? t.nameKo : t.nameZh}
                 </div>
               </button>
             ))}
           </div>
 
-          {/* 变身效果展示 */}
+          {/* 变身展示 */}
           <div 
-            className={`relative h-64 rounded-2xl overflow-hidden ${
-              transformActive ? 'transform-active' : ''
+            className={`relative h-72 rounded-2xl overflow-hidden transition-all duration-500 ${
+              transformActive ? 'transform-pulse' : ''
             }`}
-            style={{
-              background: `linear-gradient(135deg, ${transforms[selectedTransform].colors[0]}, ${transforms[selectedTransform].colors[1]})`,
-              boxShadow: transformActive ? `0 0 40px ${transforms[selectedTransform].colors[0]}80` : 'none'
-            }}
+            style={{ background: transforms[selectedTransform].bg }}
           >
             {/* 粒子效果 */}
             {transformActive && (
-              <div className="absolute inset-0">
-                {Array.from({ length: 20 }).map((_, i) => (
+              <div className="absolute inset-0 overflow-hidden">
+                {transforms[selectedTransform].particles.map((color, i) => (
                   <div
                     key={i}
                     className="absolute w-2 h-2 rounded-full"
                     style={{
-                      background: transforms[selectedTransform].colors[i % 2],
-                      left: `${Math.random() * 100}%`,
+                      left: `${10 + Math.random() * 80}%`,
                       bottom: 0,
-                      animation: `particle-float ${1 + Math.random() * 2}s ease-out infinite`,
-                      animationDelay: `${Math.random() * 2}s`
+                      background: color,
+                      animation: `particle-rise ${1.5 + Math.random()}s ease-out infinite`,
+                      animationDelay: `${Math.random() * 1.5}s`
                     }}
                   />
                 ))}
@@ -246,22 +357,29 @@ export default function HIT2Page() {
 
             {/* 角色 */}
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-8xl transform transition-all hover:scale-110 cursor-pointer"
-                   onClick={() => setTransformActive(!transformActive)}>
+              <div 
+                className="text-9xl cursor-pointer transition-all hover:scale-110"
+                onClick={() => setTransformActive(!transformActive)}
+              >
                 {transformActive ? '🦸' : '🧙'}
               </div>
             </div>
 
-            {/* 提示 */}
+            {/* 状态文字 */}
             <div className="absolute bottom-4 left-0 right-0 text-center">
-              <span className="text-white/80 text-sm">
-                {language === 'ko' ? '클릭하여 변환 활성화/비활성화' : '点击切换变身特效'}
+              <span className={`text-lg font-bold ${
+                selectedTransform === 3 ? 'text-white' : 'text-slate-800'
+              }`}>
+                {transformActive 
+                  ? (language === 'ko' ? '변환 활성!' : '变身激活!')
+                  : (language === 'ko' ? '클릭하여 변환' : '点击激活变身')
+                }
               </span>
             </div>
           </div>
         </div>
 
-        {/* 快捷分类 */}
+        {/* 分类 */}
         <div>
           <h3 className="text-xl font-bold text-white text-center mb-6">
             {language === 'ko' ? '카테고리' : '分类'}
