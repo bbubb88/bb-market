@@ -340,7 +340,7 @@ export default function CreateListingPage() {
 
           {/* Images */}
           <div>
-            <label className="block text-white font-medium mb-2">商品图标 ( emoji)</label>
+            <label className="block text-white font-medium mb-2">商品详情图片</label>
             <div className="flex gap-2 mb-2">
               <input
                 type="text"
@@ -348,7 +348,7 @@ export default function CreateListingPage() {
                 onChange={(e) => setImageUrl(e.target.value)}
                 className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
                 placeholder="输入 emoji 如: ⚔️"
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
+                onKeyDown={(e) => e.key === 'Enter' && addImage()}
               />
               <button
                 type="button"
