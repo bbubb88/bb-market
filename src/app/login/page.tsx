@@ -187,7 +187,8 @@ export default function LoginPage() {
 
               <div className="flex gap-3">
                 <button 
-                  type="submit"
+                  type="button"
+                  onClick={handleLogin}
                   disabled={loading}
                   className="flex-1 py-4 bg-violet-600 hover:bg-violet-500 disabled:opacity-50 text-white font-semibold rounded-xl transition-colors"
                 >
