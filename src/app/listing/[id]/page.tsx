@@ -3,11 +3,12 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { db } from '@/lib/supabase';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface ListingData {
   id: string;
+  sellerId: string;
   type: string;
   title: string;
   titleKo: string | null;
@@ -26,13 +27,68 @@ interface ListingData {
 export default function ListingDetailPage() {
   const { language, t } = useI18n();
   const params = useParams();
+  const router = useRouter();
   const listingId = params.id as string;
   
   const [listing, setListing] = useState<ListingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
-  const [showContact, setShowContact] = useState(false);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [showContact, setShowContact] = useState(false);
+  const [buying, setBuying] = useState(false);
+  const [orderCreated, setOrderCreated] = useState(false);
+  const [error, setError] = useState('');
+
+  // 检查用户是否登录
+  const isLoggedIn = typeof window !== 'undefined' && localStorage.getItem('access_token');
+  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : null;
+
+  // 立即购买
+  const handleBuy = async () => {
+    if (!isLoggedIn) {
+      setShowLoginPrompt(true);
+      return;
+    }
+
+    if (!listing || !user?.id) {
+      setError('用户信息无效，请重新登录');
+      return;
+    }
+
+    if (listing.sellerId === user.id) {
+      setError('不能购买自己的商品');
+      return;
+    }
+
+    setBuying(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/order/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          listingId: listing.id,
+          buyerId: user.id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || '创建订单失败');
+        return;
+      }
+
+      setOrderCreated(true);
+      // 跳转到用户中心查看订单
+      router.push('/dashboard?tab=orders');
+    } catch (err) {
+      setError('网络错误，请重试');
+    } finally {
+      setBuying(false);
+    }
+  };
 
   useEffect(() => {
     loadListing();
@@ -167,14 +223,36 @@ export default function ListingDetailPage() {
               
               {/* Actions */}
               <button 
-                onClick={() => setShowLoginPrompt(true)}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all mb-3 shadow-lg shadow-violet-600/20"
+                onClick={handleBuy}
+                disabled={buying || listing.status !== 'SELLING'}
+                className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all mb-3 shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                立即购买
+                {buying ? '处理中...' : listing.status !== 'SELLING' ? '已下架' : '立即购买'}
               </button>
 
+              {error && (
+                <div className="mb-3 p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-400 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {orderCreated && (
+                <div className="mb-3 p-4 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
+                  <p className="text-emerald-400 font-medium mb-2">✅ 订单创建成功！</p>
+                  <p className="text-slate-300 text-sm mb-3">
+                    请前往用户中心完成付款
+                  </p>
+                  <Link
+                    href="/dashboard?tab=orders"
+                    className="inline-block px-4 py-2 bg-emerald-600 text-white text-sm font-medium rounded-lg hover:bg-emerald-500"
+                  >
+                    查看订单
+                  </Link>
+                </div>
+              )}
+
               {/* Login Prompt */}
-              {showLoginPrompt && (
+              {showLoginPrompt && !orderCreated && (
                 <div className="mb-6 p-4 bg-[#5865F2]/20 border border-[#5865F2]/50 rounded-xl">
                   <div className="text-center">
                     <svg className="w-12 h-12 mx-auto mb-3 text-[#5865F2]" viewBox="0 0 24 24" fill="currentColor">
