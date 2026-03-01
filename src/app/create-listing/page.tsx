@@ -11,6 +11,7 @@ interface Game {
   name: string;
   nameKo: string;
   icon: string | null;
+  iconUrl: string | null;
   status: string;
 }
 
@@ -111,7 +112,13 @@ export default function CreateListingPage() {
                 }}
                 className="p-6 bg-slate-800/60 rounded-2xl border border-slate-700 hover:border-violet-500 transition-all hover:scale-105 text-center"
               >
-                <div className="text-5xl mb-3">{game.icon || '🎮'}</div>
+                <div className="text-5xl mb-3">
+                  {game.iconUrl ? (
+                    <img src={game.iconUrl} alt={game.name} className="w-16 h-16 mx-auto rounded-xl" />
+                  ) : (
+                    game.icon || '🎮'
+                  )}
+                </div>
                 <h3 className="text-white font-semibold text-lg">
                   {language === 'ko' ? game.nameKo : game.name}
                 </h3>
