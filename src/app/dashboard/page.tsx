@@ -1,108 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { db } from '@/lib/supabase';
 import Link from 'next/link';
 
 type TabType = 'buyer' | 'wallet' | 'profile' | 'security';
 type BuyerSubTab = 'orders' | 'purchases' | 'favorites';
 
-interface Listing {
-  id: string;
-  type: string;
-  title: string;
-  titleKo: string | null;
-  price: number;
-  status: string;
-  viewCount: number;
-  createdAt: string;
-}
-
-interface Order {
-  id: string;
-  listingId: string;
-  price: number;
-  status: string;
-  createdAt: string;
-}
-
 export default function DashboardPage() {
   const { language, t } = useI18n();
   const [activeTab, setActiveTab] = useState<TabType>('buyer');
   const [buyerSubTab, setBuyerSubTab] = useState<BuyerSubTab>('orders');
-  const [listings, setListings] = useState<Listing[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  
-  const currentUserId = 'test-seller-1';
-
-  useEffect(() => {
-    loadData();
-  }, [buyerSubTab, sellerSubTab]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      // 获取当前用户的商品
-      const { data: listingData } = await db.getListings({});
-      if (listingData) {
-        const filtered = listingData.filter((l: Listing) => {
-          if (sellerSubTab === 'listings') return l.status === 'SELLING';
-          if (sellerSubTab === 'trading') return l.status === 'TRADING';
-          if (sellerSubTab === 'sold') return l.status === 'SOLD';
-          return true;
-        });
-        setListings(filtered);
-      }
-      
-      // 获取订单
-      const { data: orderData } = await db.getOrders(currentUserId, 'seller');
-      if (orderData) {
-        setOrders(orderData);
-      }
-    } catch (error) {
-      console.error('Failed to load data:', error);
-    }
-    setLoading(false);
-  };
-
-  const handleStatusChange = async (id: string, newStatus: string) => {
-    try {
-      await db.updateListing(id, { status: newStatus });
-      loadData();
-    } catch (error) {
-      console.error('Failed to update listing:', error);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm('确定要删除这个商品吗？')) return;
-    try {
-      await db.deleteListing(id);
-      loadData();
-    } catch (error) {
-      console.error('Failed to delete listing:', error);
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('zh-TW', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; color: string }> = {
-      SELLING: { label: '待售中', color: 'bg-emerald-500' },
-      TRADING: { label: '交易中', color: 'bg-amber-500' },
-      SOLD: { label: '已完成', color: 'bg-slate-500' },
-    };
-    const s = statusMap[status] || { label: status, color: 'bg-slate-500' };
-    return <span className={`px-2 py-1 text-xs rounded-full ${s.color} text-white`}>{s.label}</span>;
-  };
 
   const tabs = [
     { id: 'buyer', label: '买家中心', labelKo: '구매자 센터', icon: '🛒' },
@@ -124,17 +32,6 @@ export default function DashboardPage() {
                 <div className="w-16 h-16 mx-auto bg-gradient-to-br from-violet-500 to-cyan-500 rounded-full flex items-center justify-text-3xl mb-3">👤</div>
                 <h3 className="text-white font-semibold">TestUser</h3>
                 <div className="mt-2 inline-block px-3 py-1 bg-emerald-500/20 text-emerald-400 text-xs rounded-full">✅ 已验证</div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2 mb-4 pb-4 border-b border-slate-700">
-                <div className="text-center p-2 bg-slate-700/50 rounded-lg">
-                  <p className="text-2xl font-bold text-white">{listings.length}</p>
-                  <p className="text-xs text-slate-400">在售</p>
-                </div>
-                <div className="text-center p-2 bg-slate-700/50 rounded-lg">
-                  <p className="text-2xl font-bold text-white">{orders.filter(o => o.status === 'COMPLETED').length}</p>
-                  <p className="text-xs text-slate-400">成交</p>
-                </div>
               </div>
               
               <nav className="space-y-1">
