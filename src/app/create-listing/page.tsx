@@ -267,7 +267,7 @@ export default function CreateListingPage() {
               <option value="">选择服务器</option>
               {servers.map((server) => (
                 <option key={server.id} value={server.id}>
-                  {server.name}
+                  {language === 'ko' && server.nameKo ? server.nameKo : server.name}
                 </option>
               ))}
             </select>
