@@ -33,6 +33,8 @@ export default function CreateListingPage() {
   const [submitting, setSubmitting] = useState(false);
   
   const [selectedGame, setSelectedGame] = useState('');
+  const [selectedZone, setSelectedZone] = useState('');
+  const [zones, setZones] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     type: 'ACCOUNT',
     gameId: '',
@@ -77,10 +79,19 @@ export default function CreateListingPage() {
         // 按服务器名排序
         const sorted = data.sort((a: Server, b: Server) => a.name.localeCompare(b.name, 'zh-CN'));
         setServers(sorted);
+        // 提取所有大区
+        const uniqueZones = [...new Set(data.map((s: Server) => s.zone).filter(Boolean))];
+        setZones(uniqueZones as string[]);
       }
     } catch (error) {
       console.error('Failed to load servers:', error);
     }
+  };
+
+  // 当大区改变时，重置服务器选择
+  const handleZoneChange = (zone: string) => {
+    setSelectedZone(zone);
+    setFormData({ ...formData, serverId: '' });
   };
 
   // Step 1: Select Game
@@ -256,22 +267,41 @@ export default function CreateListingPage() {
             </div>
           </div>
 
+          {/* Zone */}
+          {zones.length > 0 && (
+            <div>
+              <label className="block text-white font-medium mb-2">大区</label>
+              <select
+                value={selectedZone}
+                onChange={(e) => handleZoneChange(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
+              >
+                <option value="">选择大区</option>
+                {zones.map((zone) => (
+                  <option key={zone} value={zone}>{zone}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Server */}
-          <div>
-            <label className="block text-white font-medium mb-2">服务器</label>
-            <select
-              value={formData.serverId}
-              onChange={(e) => setFormData({ ...formData, serverId: e.target.value })}
-              className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
-            >
-              <option value="">选择服务器</option>
-              {servers.map((server) => (
-                <option key={server.id} value={server.id}>
-                  {language === 'ko' && server.nameKo ? server.nameKo : server.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {selectedZone && (
+            <div>
+              <label className="block text-white font-medium mb-2">服务器</label>
+              <select
+                value={formData.serverId}
+                onChange={(e) => setFormData({ ...formData, serverId: e.target.value })}
+                className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500"
+              >
+                <option value="">选择服务器</option>
+                {servers.filter(s => s.zone === selectedZone).map((server) => (
+                  <option key={server.id} value={server.id}>
+                    {language === 'ko' && server.nameKo ? server.nameKo : server.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Title */}
           <div>
