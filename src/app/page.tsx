@@ -154,10 +154,7 @@ export default function Home() {
               href="/create-listing"
               className="group px-10 py-4 text-lg font-semibold text-white bg-slate-800/80 border border-slate-600/50 rounded-2xl hover:bg-slate-700/80 hover:border-slate-500 transition-all duration-300 backdrop-blur-sm"
             >
-              <span className="flex items-center gap-2">
-                <span>{t('hero.sell')}</span>
-                <span className="text-xs bg-slate-700 px-2 py-1 rounded-full">{t('hero.free')}</span>
-              </span>
+              <span>{t('hero.sell')}</span>
             </Link>
           </div>
           
