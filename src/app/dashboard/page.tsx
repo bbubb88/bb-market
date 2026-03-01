@@ -86,7 +86,7 @@ export default function DashboardPage() {
 
   const tabs = [
     { id: 'buyer', label: '买家中心', icon: '🛒' },
-    { id: 'seller', label: '卖家中心', icon: '💰' },
+    { id: 'seller', label: '我的挂售', icon: '💰' },
     { id: 'wallet', label: '钱包', icon: '💳' },
     { id: 'profile', label: '个人资料', icon: '👤' },
     { id: 'security', label: '安全设置', icon: '🔒' },
@@ -150,7 +150,7 @@ export default function DashboardPage() {
             {activeTab === 'seller' && (
               <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-white">💰 卖家中心</h2>
+                  <h2 className="text-xl font-bold text-white">💰 我的挂售</h2>
                   <Link href="/create-listing" className="px-4 py-2 bg-violet-600 text-white font-medium rounded-lg">+ 发布商品</Link>
                 </div>
                 <div className="flex gap-2 mb-6">
