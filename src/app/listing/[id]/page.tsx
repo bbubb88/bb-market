@@ -29,7 +29,7 @@ export default function ListingDetailPage() {
   const { language, t } = useI18n();
   const params = useParams();
   const router = useRouter();
-  const listingId = params.id as string;
+  const listingId = params?.id as string | undefined;
   
   const [listing, setListing] = useState<ListingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,7 +92,9 @@ export default function ListingDetailPage() {
   };
 
   useEffect(() => {
-    loadListing();
+    if (listingId) {
+      loadListing();
+    }
   }, [listingId]);
 
   const loadListing = async () => {
@@ -101,7 +103,7 @@ export default function ListingDetailPage() {
       console.log('Loading listing:', listingId);
       
       // 首先尝试从静态数据获取
-      const numericId = parseInt(listingId, 10);
+      const numericId = parseInt(listingId || '0', 10);
       console.log('Numeric ID:', numericId, 'isNaN:', isNaN(numericId));
       console.log('Listings available:', listings.length);
       
@@ -133,9 +135,11 @@ export default function ListingDetailPage() {
       }
 
       // 如果静态数据没有，尝试从 Supabase 获取
-      const { data } = await db.getListing(listingId);
-      if (data) {
-        setListing(data);
+      if (listingId) {
+        const { data } = await db.getListing(listingId);
+        if (data) {
+          setListing(data);
+        }
       }
     } catch (error) {
       console.error('Failed to load listing:', error);
