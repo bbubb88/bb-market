@@ -100,9 +100,20 @@ export default function ListingDetailPage() {
   const loadListing = async () => {
     setLoading(true);
     try {
+      console.log('listings:', listings);
+      console.log('listingId:', listingId);
+      
+      if (!listingId) {
+        setLoading(false);
+        return;
+      }
+      
       // 首先尝试从静态数据获取
-      const numericId = parseInt(listingId || '0', 10);
-      const staticListing = listings.find(l => l.id === numericId);
+      const numericId = parseInt(listingId, 10);
+      console.log('numericId:', numericId);
+      console.log('find result:', listings?.find(l => l.id === numericId));
+      
+      const staticListing = listings?.find(l => l.id === numericId);
       
       if (staticListing) {
         // 转换为详情页需要的格式
