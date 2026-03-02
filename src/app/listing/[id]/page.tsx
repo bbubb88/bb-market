@@ -100,15 +100,9 @@ export default function ListingDetailPage() {
   const loadListing = async () => {
     setLoading(true);
     try {
-      console.log('Loading listing:', listingId);
-      
       // 首先尝试从静态数据获取
       const numericId = parseInt(listingId || '0', 10);
-      console.log('Numeric ID:', numericId, 'isNaN:', isNaN(numericId));
-      console.log('Listings available:', listings.length);
-      
       const staticListing = listings.find(l => l.id === numericId);
-      console.log('Found listing:', staticListing);
       
       if (staticListing) {
         // 转换为详情页需要的格式
@@ -143,8 +137,9 @@ export default function ListingDetailPage() {
       }
     } catch (error) {
       console.error('Failed to load listing:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
   
   if (loading) {
