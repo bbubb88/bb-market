@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 获取所有商品信息
-    const listingIds = orderItems.map(item => item.listingId).join(',');
+    const listingIds = orderItems.map(item => String(item.listingId)).join(',');
     const listingRes = await fetch(
       `${SUPABASE_URL}/rest/v1/Listing?id=in.(${listingIds})&select=*`,
       {
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     const errors = [];
 
     for (const item of orderItems) {
-      const listing = listings.find((l: any) => l.id === item.listingId);
+      const listing = listings.find((l: any) => String(l.id) === String(item.listingId));
       
       if (!listing) {
         errors.push({ listingId: item.listingId, error: 'Listing not found' });
