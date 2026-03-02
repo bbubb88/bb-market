@@ -11,24 +11,24 @@ export async function POST(request: NextRequest) {
     const { items, buyerId } = body;
 
     // 支持两种格式：
-    // 1. 单个商品: { listingId, buyerId, quantity? }
-    // 2. 多个商品: { items: [{ listingId, quantity? }], buyerId }
+    // 1. 单个商品: { listingId, buyerId }
+    // 2. 多个商品: { items: [{ listingId }], buyerId }
     
-    let orderItems: Array<{ listingId: number; quantity: number }> = [];
+    let orderItems: Array<{ listingId: number }> = [];
     
     if (items && Array.isArray(items)) {
       // 多个商品格式
       orderItems = items;
     } else {
       // 单个商品格式
-      const { listingId, quantity = 1 } = body;
+      const { listingId } = body;
       if (!listingId || !buyerId) {
         return NextResponse.json(
           { error: 'Missing required fields: listingId and buyerId' },
           { status: 400 }
         );
       }
-      orderItems = [{ listingId, quantity }];
+      orderItems = [{ listingId }];
     }
 
     if (!buyerId) {
@@ -88,8 +88,7 @@ export async function POST(request: NextRequest) {
         buyerId,
         sellerId: listing.sellerId,
         price: listing.price,
-        quantity: item.quantity || 1,
-        fee: Math.round(listing.price * (item.quantity || 1) * 0.03 * 100) / 100,
+        fee: Math.round(listing.price * 0.03 * 100) / 100,
         status: 'PENDING',
       };
 
