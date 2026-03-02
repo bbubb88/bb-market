@@ -61,9 +61,6 @@ const banners: Banner[] = [
     badgeColor: 'from-amber-500 to-yellow-500',
   },
 ];
-    badgeColor: 'from-violet-500 to-purple-500',
-  },
-];
 
 export default function Banner() {
   const [activeIndex, setActiveIndex] = useState(0);
