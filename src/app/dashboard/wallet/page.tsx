@@ -13,10 +13,21 @@ interface Transaction {
   description?: string;
 }
 
+interface RechargeRecord {
+  id: string;
+  amount: number;
+  address: string;
+  status: 'pending' | 'pending_confirm' | 'completed' | 'expired' | 'rejected';
+  createdAt: string;
+  expiresAt?: string;
+  completedAt?: string;
+}
+
 export default function WalletPage() {
   const { t } = useI18n();
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [rechargeRecords, setRechargeRecords] = useState<RechargeRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -46,10 +57,23 @@ export default function WalletPage() {
         setBalance(0);
         setTransactions([]);
       }
+
+      // 获取充值记录
+      try {
+        const rechargeRes = await fetch(`/api/recharge/list?userId=${userId}`);
+        if (rechargeRes.ok) {
+          const rechargeData = await rechargeRes.json();
+          setRechargeRecords(rechargeData || []);
+        }
+      } catch (e) {
+        console.log('Recharge API not available');
+        setRechargeRecords([]);
+      }
     } catch (error) {
       console.log('Wallet API not available, using defaults');
       setBalance(0);
       setTransactions([]);
+      setRechargeRecords([]);
     }
     setLoading(false);
   };
@@ -119,12 +143,12 @@ export default function WalletPage() {
               </div>
               
               <div className="flex gap-4 mt-8">
-                <button 
-                  onClick={() => setShowDepositModal(true)}
-                  className="flex-1 py-3 bg-white/20 text-white font-medium rounded-xl hover:bg-white/30 transition-colors"
+                <Link 
+                  href="/recharge"
+                  className="flex-1 py-3 bg-white/20 text-white font-medium rounded-xl hover:bg-white/30 transition-colors text-center"
                 >
                   💰 充值
-                </button>
+                </Link>
                 <button 
                   onClick={() => setShowWithdrawModal(true)}
                   className="flex-1 py-3 bg-white/20 text-white font-medium rounded-xl hover:bg-white/30 transition-colors"
@@ -135,23 +159,73 @@ export default function WalletPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-4 gap-4 mb-8">
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
                 <p className="text-2xl mb-1">📋</p>
                 <p className="text-slate-400 text-sm">待确认</p>
-                <p className="text-white font-bold">0</p>
+                <p className="text-yellow-400 font-bold">{rechargeRecords.filter(r => r.status === 'pending' || r.status === 'pending_confirm').length}</p>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
                 <p className="text-2xl mb-1">✅</p>
                 <p className="text-slate-400 text-sm">已完成</p>
-                <p className="text-emerald-400 font-bold">{transactions.filter(t => t.status === 'completed').length}</p>
+                <p className="text-emerald-400 font-bold">{rechargeRecords.filter(r => r.status === 'completed').length}</p>
               </div>
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
                 <p className="text-2xl mb-1">💳</p>
+                <p className="text-slate-400 text-sm">累计充值</p>
+                <p className="text-violet-400 font-bold">{rechargeRecords.length}</p>
+              </div>
+              <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
+                <p className="text-2xl mb-1">💰</p>
                 <p className="text-slate-400 text-sm">累计交易</p>
-                <p className="text-violet-400 font-bold">{transactions.length}</p>
+                <p className="text-cyan-400 font-bold">{transactions.length}</p>
               </div>
             </div>
+
+            {/* Recharge Records */}
+            {rechargeRecords.length > 0 && (
+              <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700 mb-8">
+                <h2 className="text-xl font-bold text-white mb-6">💰 充值记录</h2>
+                <div className="space-y-3">
+                  {rechargeRecords.slice(0, 5).map((recharge) => (
+                    <div key={recharge.id} className="flex items-center justify-between p-4 bg-slate-700/50 rounded-xl">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-2xl">
+                          ₮
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">
+                            充值 {recharge.amount.toFixed(2)} USDT
+                          </p>
+                          <p className="text-slate-400 text-sm">{formatDate(recharge.createdAt)}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-4">
+                        {recharge.status === 'pending' && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/20 text-yellow-400">等待转账</span>
+                        )}
+                        {recharge.status === 'pending_confirm' && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-blue-500/20 text-blue-400">等待确认</span>
+                        )}
+                        {recharge.status === 'completed' && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-emerald-500/20 text-emerald-400">已完成</span>
+                        )}
+                        {recharge.status === 'expired' && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">已过期</span>
+                        )}
+                        {recharge.status === 'rejected' && (
+                          <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">已拒绝</span>
+                        )}
+                        <p className="text-lg font-bold text-emerald-400">
+                          +{recharge.amount.toFixed(2)} USDT
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Transaction History */}
             <div className="bg-slate-800/50 rounded-2xl p-6 border border-slate-700">

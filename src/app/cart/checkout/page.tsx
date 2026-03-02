@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [balance, setBalance] = useState(0);
-  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'wallet'>('wallet');
+  const [paymentMethod, setPaymentMethod] = useState<'wallet' | 'usdt'>('wallet');
 
   useEffect(() => {
     loadData();
@@ -83,6 +83,19 @@ export default function CheckoutPage() {
   const handlePayment = async () => {
     if (!user || cartItems.length === 0) return;
     
+    // USDT 支付选项
+    if (paymentMethod === 'usdt') {
+      // 跳转到充值页面，带上金额参数
+      const checkoutData = {
+        items: cartItems,
+        total: total,
+      };
+      localStorage.setItem('bbmarket_checkout', JSON.stringify(cartItems));
+      router.push(`/recharge?amount=${total.toFixed(2)}`);
+      return;
+    }
+    
+    // 钱包余额支付
     if (balance < total) {
       setError(language === 'ko' 
         ? '잔액이 부족합니다. 충전 후 다시 시도해주세요.' 
@@ -342,6 +355,26 @@ export default function CheckoutPage() {
                   </div>
                   <div className="text-2xl">💰</div>
                 </label>
+                
+                <label className={`flex items-center gap-4 p-4 bg-slate-700/50 rounded-xl cursor-pointer border-2 ${paymentMethod === 'usdt' ? 'border-violet-500' : 'border-transparent'}`}>
+                  <input
+                    type="radio"
+                    name="payment"
+                    value="usdt"
+                    checked={paymentMethod === 'usdt'}
+                    onChange={() => setPaymentMethod('usdt')}
+                    className="w-5 h-5 text-violet-500"
+                  />
+                  <div className="flex-1">
+                    <p className="text-white font-medium">
+                      {language === 'ko' ? 'USDT 직접 결제' : 'USDT 直接支付'}
+                    </p>
+                    <p className="text-slate-400 text-sm">
+                      {language === 'ko' ? 'TRC20 네트워크로 즉시 결제' : '通过 TRC20 网络即时支付'}
+                    </p>
+                  </div>
+                  <div className="text-2xl">₮</div>
+                </label>
               </div>
 
               {/* Wallet Balance Warning */}
@@ -399,7 +432,7 @@ export default function CheckoutPage() {
               {/* Pay Button */}
               <button
                 onClick={handlePayment}
-                disabled={processing || balance < total}
+                disabled={processing || (paymentMethod === 'wallet' && balance < total)}
                 className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {processing ? (
@@ -407,6 +440,8 @@ export default function CheckoutPage() {
                     <span className="animate-spin">⏳</span>
                     {language === 'ko' ? '처리 중...' : '处理中...'}
                   </span>
+                ) : paymentMethod === 'usdt' ? (
+                  <span>₮ {total.toFixed(2)} USDT {language === 'ko' ? '결제하기' : '立即支付'} →</span>
                 ) : (
                   `$${total.toFixed(2)} USDT ${language === 'ko' ? '결제하기' : '立即支付'}`
                 )}
