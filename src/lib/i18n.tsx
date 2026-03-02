@@ -23,6 +23,10 @@ const translations: Translations = {
   'nav.selectGame': { 'zh-TW': '选择游戏', 'ko': '게임 선택' },
   'nav.dashboard': { 'zh-TW': '用户中心', 'ko': '마이페이지' },
   'nav.create-listing': { 'zh-TW': '卖家中心', 'ko': '판매센터' },
+  'nav.orders': { 'zh-TW': '订单', 'ko': '주문' },
+  'nav.listings': { 'zh-TW': '我的挂售', 'ko': '내 상품' },
+  'nav.favorites': { 'zh-TW': '收藏', 'ko': '찜' },
+  'nav.wallet': { 'zh-TW': '钱包', 'ko': '지갑' },
   
   // Select Game Page
   'selectGame.title': { 'zh-TW': '选择游戏', 'ko': '게임 선택' },
