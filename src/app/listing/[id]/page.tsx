@@ -5,7 +5,6 @@ import { useI18n } from '@/lib/i18n';
 import { db } from '@/lib/supabase';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { listings } from '@/data/games';
 
 interface ListingData {
   id: string;
@@ -29,7 +28,7 @@ export default function ListingDetailPage() {
   const { language, t } = useI18n();
   const params = useParams();
   const router = useRouter();
-  const listingId = params?.id as string | undefined;
+  const listingId = params.id as string;
   
   const [listing, setListing] = useState<ListingData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -92,65 +91,20 @@ export default function ListingDetailPage() {
   };
 
   useEffect(() => {
-    if (listingId) {
-      loadListing();
-    }
+    loadListing();
   }, [listingId]);
 
   const loadListing = async () => {
     setLoading(true);
     try {
-      console.log('listings:', listings);
-      console.log('listingId:', listingId);
-      
-      if (!listingId) {
-        setLoading(false);
-        return;
-      }
-      
-      // 首先尝试从静态数据获取
-      const numericId = parseInt(listingId, 10);
-      console.log('numericId:', numericId);
-      console.log('find result:', listings?.find(l => l.id === numericId));
-      
-      const staticListing = listings?.find(l => l.id === numericId);
-      
-      if (staticListing) {
-        // 转换为详情页需要的格式
-        const listingData: ListingData = {
-          id: String(staticListing.id),
-          sellerId: staticListing.seller || 'unknown',
-          type: staticListing.type?.toUpperCase() || 'ACCOUNT',
-          title: staticListing.title,
-          titleKo: staticListing.titleKo || null,
-          description: staticListing.description || null,
-          descriptionKo: staticListing.descriptionKo || null,
-          price: staticListing.price,
-          level: staticListing.level || null,
-          amount: null,
-          images: staticListing.images || ['📦'],
-          badge: staticListing.badge || null,
-          serverId: staticListing.server || null,
-          status: 'SELLING',
-          createdAt: staticListing.createdAt || new Date().toISOString(),
-        };
-        setListing(listingData);
-        setLoading(false);
-        return;
-      }
-
-      // 如果静态数据没有，尝试从 Supabase 获取
-      if (listingId) {
-        const { data } = await db.getListing(listingId);
-        if (data) {
-          setListing(data);
-        }
+      const { data } = await db.getListing(listingId);
+      if (data) {
+        setListing(data);
       }
     } catch (error) {
       console.error('Failed to load listing:', error);
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
   
   if (loading) {
