@@ -21,6 +21,7 @@ interface RechargeRecord {
   createdAt: string;
   expiresAt?: string;
   completedAt?: string;
+  screenshotUrl?: string;
 }
 
 export default function WalletPage() {
@@ -28,6 +29,7 @@ export default function WalletPage() {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rechargeRecords, setRechargeRecords] = useState<RechargeRecord[]>([]);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -217,6 +219,14 @@ export default function WalletPage() {
                         {recharge.status === 'rejected' && (
                           <span className="px-2 py-1 text-xs rounded-full bg-red-500/20 text-red-400">已拒绝</span>
                         )}
+                        {recharge.screenshotUrl && (
+                          <button
+                            onClick={() => setSelectedScreenshot(recharge.screenshotUrl!)}
+                            className="px-2 py-1 text-xs rounded-full bg-violet-500/20 text-violet-400 hover:bg-violet-500/30"
+                          >
+                            📷 截图
+                          </button>
+                        )}
                         <p className="text-lg font-bold text-emerald-400">
                           +{recharge.amount.toFixed(2)} USDT
                         </p>
@@ -347,6 +357,31 @@ export default function WalletPage() {
                       确认提现
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Screenshot Modal */}
+            {selectedScreenshot && (
+              <div 
+                className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                onClick={() => setSelectedScreenshot(null)}
+              >
+                <div className="bg-slate-800 rounded-2xl p-4 max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-white">转账截图</h3>
+                    <button 
+                      onClick={() => setSelectedScreenshot(null)}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <img 
+                    src={selectedScreenshot} 
+                    alt="Transfer screenshot" 
+                    className="w-full rounded-lg"
+                  />
                 </div>
               </div>
             )}

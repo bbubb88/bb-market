@@ -38,7 +38,7 @@ function generateId(): string {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { userId, amount } = body;
+    const { userId, amount, orderIds } = body;
 
     if (!userId || !amount || amount < 5) {
       return NextResponse.json(
@@ -50,18 +50,26 @@ export async function POST(request: NextRequest) {
     const now = new Date();
     const expiresAt = new Date(now.getTime() + EXPIRY_MINUTES * 60 * 1000);
 
+    // 构建充值记录数据
+    const rechargeData: any = {
+      userId,
+      amount: parseFloat(amount),
+      address: USDT_ADDRESS,
+      status: 'pending',
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+    };
+    
+    // 如果有订单ID，保存到充值记录中
+    if (orderIds && Array.isArray(orderIds)) {
+      rechargeData.orderIds = orderIds.join(',');
+    }
+
     // 尝试创建充值记录到 Supabase
     try {
       const { status, data } = await supabaseRequest('recharge', {
         method: 'POST',
-        body: JSON.stringify({
-          userId,
-          amount: parseFloat(amount),
-          address: USDT_ADDRESS,
-          status: 'pending',
-          createdAt: now.toISOString(),
-          expiresAt: expiresAt.toISOString(),
-        }),
+        body: JSON.stringify(rechargeData),
       });
 
       if (status >= 400) {

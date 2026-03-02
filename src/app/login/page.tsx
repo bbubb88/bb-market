@@ -45,6 +45,24 @@ export default function LoginPage() {
     }
   };
 
+  // Discord OAuth 登录
+  const handleDiscordLogin = async () => {
+    try {
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+      const redirectUri = `${siteUrl}/login/success`;
+      
+      // 直接使用 Supabase 的 Discord OAuth URL
+      // Supabase 会处理 OAuth 流程并回调到 redirectUri
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
+      const authorizeUrl = `${supabaseUrl}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(redirectUri)}`;
+      
+      // 跳转到 Discord 授权页面
+      window.location.href = authorizeUrl;
+    } catch (err) {
+      setError('网络错误，请重试');
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
@@ -108,7 +126,7 @@ export default function LoginPage() {
 
         {/* Discord Login */}
         <button
-          onClick={() => alert('Discord 登录功能即将上线')}
+          onClick={handleDiscordLogin}
           className="w-full mt-6 p-4 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl transition-colors"
         >
           <div className="flex items-center justify-center gap-3">

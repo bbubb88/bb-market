@@ -13,6 +13,8 @@ interface RechargeRecord {
   createdAt: string;
   expiresAt?: string;
   completedAt?: string;
+  screenshotUrl?: string;
+  orderIds?: string;
 }
 
 export default function AdminRechargePage() {
@@ -27,6 +29,7 @@ export default function AdminRechargePage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionType, setActionType] = useState<'approve' | 'reject'>('approve');
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
 
   // 验证管理密码
   const handleLogin = useCallback(async (e: React.FormEvent) => {
@@ -309,6 +312,8 @@ export default function AdminRechargePage() {
                     <th className="px-4 py-3 text-left text-slate-400 font-medium">用户ID</th>
                     <th className="px-4 py-3 text-left text-slate-400 font-medium">金额</th>
                     <th className="px-4 py-3 text-left text-slate-400 font-medium">状态</th>
+                    <th className="px-4 py-3 text-left text-slate-400 font-medium">关联订单</th>
+                    <th className="px-4 py-3 text-left text-slate-400 font-medium">截图</th>
                     <th className="px-4 py-3 text-left text-slate-400 font-medium">创建时间</th>
                     <th className="px-4 py-3 text-right text-slate-400 font-medium">操作</th>
                   </tr>
@@ -324,6 +329,27 @@ export default function AdminRechargePage() {
                       </td>
                       <td className="px-4 py-4">
                         {getStatusBadge(record.status)}
+                      </td>
+                      <td className="px-4 py-4">
+                        {record.orderIds ? (
+                          <span className="text-violet-400 text-sm">
+                            {record.orderIds.split(',').length} 个订单
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-sm">-</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4">
+                        {record.screenshotUrl ? (
+                          <button
+                            onClick={() => setSelectedScreenshot(record.screenshotUrl!)}
+                            className="px-3 py-1 bg-violet-600 text-white text-sm rounded-lg hover:bg-violet-500"
+                          >
+                            📷 查看
+                          </button>
+                        ) : (
+                          <span className="text-slate-500 text-sm">无</span>
+                        )}
                       </td>
                       <td className="px-4 py-4">
                         <p className="text-slate-400 text-sm">{formatDate(record.createdAt)}</p>
@@ -422,6 +448,31 @@ export default function AdminRechargePage() {
                 </tbody>
               </table>
             )}
+          </div>
+        )}
+
+        {/* Screenshot Modal */}
+        {selectedScreenshot && (
+          <div 
+            className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+            onClick={() => setSelectedScreenshot(null)}
+          >
+            <div className="bg-slate-800 rounded-2xl p-4 max-w-2xl w-full" onClick={e => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-bold text-white">转账截图</h3>
+                <button 
+                  onClick={() => setSelectedScreenshot(null)}
+                  className="text-slate-400 hover:text-white"
+                >
+                  ✕
+                </button>
+              </div>
+              <img 
+                src={selectedScreenshot} 
+                alt="Transfer screenshot" 
+                className="w-full rounded-lg"
+              />
+            </div>
           </div>
         )}
       </div>

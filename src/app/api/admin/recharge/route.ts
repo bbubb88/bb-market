@@ -138,10 +138,36 @@ export async function POST(request: NextRequest) {
         }),
       });
 
+      // 如果有关联的订单，更新订单状态为 PAID
+      if (recharge.orderIds) {
+        const orderIds = recharge.orderIds.split(',').filter((id: string) => id.trim());
+        if (orderIds.length > 0) {
+          const now = new Date().toISOString();
+          for (const orderId of orderIds) {
+            try {
+              await supabaseRequest(
+                `Order?id=eq.${orderId.trim()}`,
+                {
+                  method: 'PATCH',
+                  body: JSON.stringify({
+                    status: 'PAID',
+                    paidAt: now,
+                    updatedAt: now,
+                  }),
+                }
+              );
+            } catch (orderError) {
+              console.error('Failed to update order:', orderId, orderError);
+            }
+          }
+        }
+      }
+
       return NextResponse.json({
         success: true,
         message: 'Recharge approved and balance updated',
         newBalance,
+        ordersUpdated: recharge.orderIds ? true : false,
       });
 
     } else if (action === 'reject') {

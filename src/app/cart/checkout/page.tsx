@@ -83,16 +83,52 @@ export default function CheckoutPage() {
   const handlePayment = async () => {
     if (!user || cartItems.length === 0) return;
     
-    // USDT 支付选项
+    // USDT 直接支付选项
     if (paymentMethod === 'usdt') {
-      // 跳转到充值页面，带上金额参数
-      const checkoutData = {
-        items: cartItems,
-        total: total,
-      };
-      localStorage.setItem('bbmarket_checkout', JSON.stringify(cartItems));
-      router.push(`/recharge?amount=${total.toFixed(2)}`);
-      return;
+      setProcessing(true);
+      setError('');
+      
+      try {
+        // 1. 先创建订单（状态为 PENDING，等待支付确认后更新为 PAID）
+        const orderResults = [];
+        for (const item of cartItems) {
+          const orderRes = await fetch('/api/orders/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              listingId: item.listingId,
+              buyerId: user.id,
+              quantity: item.quantity,
+            }),
+          });
+
+          const orderData = await orderRes.json();
+          
+          if (!orderRes.ok) {
+            throw new Error(orderData.error || 'Failed to create order');
+          }
+          
+          orderResults.push(orderData[0] || orderData);
+        }
+
+        // 2. 保存订单ID和金额到本地存储，用于充值确认后更新订单状态
+        const pendingPaymentData = {
+          orderIds: orderResults.map((o: any) => o.id),
+          userId: user.id,
+          totalAmount: total,
+          paymentMethod: 'usdt',
+          items: cartItems,
+        };
+        localStorage.setItem('bbmarket_pending_payment', JSON.stringify(pendingPaymentData));
+        
+        // 3. 跳转到充值页面
+        router.push(`/recharge?amount=${total.toFixed(2)}&orders=${orderResults.map((o: any) => o.id).join(',')}`);
+        return;
+      } catch (err: any) {
+        setError(err.message || (language === 'ko' ? '주문 생성 중 오류가 발생했습니다' : '创建订单时出错'));
+        setProcessing(false);
+        return;
+      }
     }
     
     // 钱包余额支付

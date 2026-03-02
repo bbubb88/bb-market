@@ -30,7 +30,7 @@ async function supabaseRequest(endpoint: string, options: RequestInit = {}) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { rechargeId } = body;
+    const { rechargeId, screenshotUrl } = body;
 
     if (!rechargeId) {
       return NextResponse.json(
@@ -39,13 +39,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 更新充值记录状态为 pending_confirm（等待确认）
+    // 更新充值记录状态为 pending_confirm（等待确认），并保存截图URL
     try {
+      const updateData: any = {
+        status: 'pending_confirm',
+      };
+      
+      // 如果有截图URL，保存到数据库
+      if (screenshotUrl) {
+        updateData.screenshotUrl = screenshotUrl;
+      }
+
       const { status, data } = await supabaseRequest(`recharge?id=eq.${rechargeId}`, {
         method: 'PATCH',
-        body: JSON.stringify({
-          status: 'pending_confirm',
-        }),
+        body: JSON.stringify(updateData),
       });
 
       if (status >= 400) {

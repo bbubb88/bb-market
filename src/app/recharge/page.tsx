@@ -12,9 +12,10 @@ interface RechargeRecord {
   id?: string;
   amount: number;
   address: string;
-  status: 'pending' | 'completed' | 'expired';
+  status: 'pending' | 'pending_confirm' | 'completed' | 'expired' | 'rejected';
   createdAt: string;
   expiresAt: string;
+  screenshotUrl?: string;
 }
 
 function RechargeContent() {
@@ -31,8 +32,9 @@ function RechargeContent() {
   const [record, setRecord] = useState<RechargeRecord | null>(null);
   const [copied, setCopied] = useState(false);
 
-  // 获取金额参数
+  // 获取金额参数和订单ID
   const orderAmount = searchParams.get('amount');
+  const orderIdsParam = searchParams.get('orders');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -49,12 +51,16 @@ function RechargeContent() {
 
     setSubmitting(true);
     try {
+      // 解析订单ID列表
+      const orderIds = orderIdsParam ? orderIdsParam.split(',') : [];
+      
       const res = await fetch('/api/recharge/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
           amount: parseFloat(amount),
+          orderIds: orderIds.length > 0 ? orderIds : undefined,
         }),
       });
 
@@ -117,16 +123,52 @@ function RechargeContent() {
     setIsExpired(false);
   };
 
-  // 标记已转账
+  // 截图上传状态
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string>('');
+  const [uploading, setUploading] = useState(false);
+
+  // 处理截图选择
+  const handleScreenshotChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setScreenshotFile(file);
+      // 生成预览
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setScreenshotPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // 上传截图并确认转账
   const handleConfirmTransfer = async () => {
     if (!record?.id) return;
     
+    // 如果还没有显示上传弹窗，先显示
+    if (!showUploadModal) {
+      setShowUploadModal(true);
+      return;
+    }
+    
+    setUploading(true);
     try {
+      let screenshotUrl = '';
+      
+      // 如果有截图文件，直接使用 base64 预览（简化处理）
+      if (screenshotPreview) {
+        screenshotUrl = screenshotPreview;
+      }
+
+      // 确认转账
       const res = await fetch('/api/recharge/confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           rechargeId: record.id,
+          screenshotUrl: screenshotUrl,
         }),
       });
 
@@ -136,6 +178,9 @@ function RechargeContent() {
       }
     } catch (error) {
       console.error('Failed to confirm transfer:', error);
+    } finally {
+      setUploading(false);
+      setShowUploadModal(false);
     }
   };
 
@@ -299,6 +344,72 @@ function RechargeContent() {
             </>
           )}
         </div>
+
+        {/* Screenshot Upload Modal */}
+        {showUploadModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full">
+              <h3 className="text-xl font-bold text-white mb-4">
+                {language === 'ko' ? '📸转账 증빙Screenshot' : '📸 上传转账截图'}
+              </h3>
+              
+              <p className="text-slate-400 text-sm mb-4">
+                {language === 'ko' 
+                  ? '转账 완료 후 스크린샷을 업로드해주세요 (선택사항)' 
+                  : '请上传转账截图以便管理员核实（可选）'}
+              </p>
+              
+              <div className="mb-4">
+                <label className="block">
+                  <div className="border-2 border-dashed border-slate-600 rounded-xl p-6 text-center cursor-pointer hover:border-violet-500 transition-colors">
+                    {screenshotPreview ? (
+                      <img src={screenshotPreview} alt="Screenshot preview" className="max-h-48 mx-auto rounded-lg" />
+                    ) : (
+                      <>
+                        <div className="text-4xl mb-2">📎</div>
+                        <p className="text-slate-400 text-sm">
+                          {language === 'ko' ? '클릭하여 파일 선택' : '点击选择文件'}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <input 
+                    type="file" 
+                    accept="image/*"
+                    onChange={handleScreenshotChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setShowUploadModal(false);
+                    setScreenshotFile(null);
+                    setScreenshotPreview('');
+                  }}
+                  className="flex-1 py-3 bg-slate-700 text-white rounded-xl"
+                >
+                  {language === 'ko' ? '취소' : '取消'}
+                </button>
+                <button 
+                  onClick={handleConfirmTransfer}
+                  disabled={uploading}
+                  className="flex-1 py-3 bg-emerald-600 text-white rounded-xl disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="animate-spin">⏳</span>
+                    </span>
+                  ) : (
+                    language === 'ko' ? '확인 요청' : '确认提交'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

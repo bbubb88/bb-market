@@ -11,7 +11,9 @@ CREATE TABLE IF NOT EXISTS recharge (
   status VARCHAR(50) DEFAULT 'pending',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   expires_at TIMESTAMP WITH TIME ZONE,
-  completed_at TIMESTAMP WITH TIME ZONE
+  completed_at TIMESTAMP WITH TIME ZONE,
+  screenshot_url TEXT,
+  order_ids TEXT
 );
 
 -- 创建索引
@@ -50,4 +52,11 @@ CREATE POLICY "Allow all access to transaction" ON transaction FOR ALL USING (tr
 -- 注意: user 表需要有 balance 字段
 -- 如果没有，需要添加:
 -- ALTER TABLE user ADD COLUMN IF NOT EXISTS balance DECIMAL(20, 8) DEFAULT 0;
+
+-- =============================================
+-- 更新现有表结构 (如果表已存在)
+-- =============================================
+-- 为 recharge 表添加新字段
+ALTER TABLE recharge ADD COLUMN IF NOT EXISTS screenshot_url TEXT;
+ALTER TABLE recharge ADD COLUMN IF NOT EXISTS order_ids TEXT;
 -- =============================================
