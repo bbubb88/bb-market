@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useI18n } from '@/lib/i18n';
 import { db } from '@/lib/supabase';
 import ListingCard from '@/components/ListingCard';
+import Banner from '@/components/Banner';
 
 interface Listing {
   id: string;
@@ -203,37 +204,51 @@ export default function Home() {
         </div>
       </div>
 
+      {/* Banner Carousel */}
+      <div className="max-w-7xl mx-auto px-4 pt-8">
+        <Banner />
+      </div>
+
       {/* Main Content with Sidebar */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Content */}
           <div className="flex-1">
-            {/* Categories */}
+            {/* Categories - Enhanced */}
             <section className="mb-8">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-white">交易分类</h2>
+                <Link href="/select-game" className="text-sm text-violet-400 hover:text-violet-300 transition-colors">
+                  查看全部 →
+                </Link>
               </div>
               <div className="grid grid-cols-3 gap-4">
                 {[
-                  { id: 'accounts', name: '账号', nameKo: '계정', icon: '📋' },
-                  { id: 'items', name: '道具', nameKo: '아이템', icon: '🎁' },
-                  { id: 'coins', name: '游戏币', nameKo: '게임화폐', icon: '💰' },
+                  { id: 'accounts', name: '账号', nameKo: '계정', icon: '📋', gradient: 'from-blue-500 to-cyan-500', desc: '高级账号交易' },
+                  { id: 'items', name: '道具', nameKo: '아이템', icon: '🎁', gradient: 'from-violet-500 to-purple-500', desc: '稀有装备道具' },
+                  { id: 'coins', name: '游戏币', nameKo: '게임화폐', icon: '💰', gradient: 'from-amber-500 to-orange-500', desc: '金币快速交易' },
                 ].map((cat) => (
                   <Link
                     key={cat.id}
                     href={`/select-game?type=${cat.id}`}
-                    className="group p-4 bg-slate-800/60 rounded-xl border border-slate-700 hover:border-violet-500 transition-all"
+                    className="group p-5 bg-slate-800/60 rounded-2xl border border-slate-700/50 hover:border-violet-500/50 transition-all duration-300 hover:-translate-y-1"
                   >
-                    <div className="text-3xl mb-2">{cat.icon}</div>
-                    <div className="text-white font-medium">
+                    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${cat.gradient} flex items-center justify-center text-2xl mb-3 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                      {cat.icon}
+                    </div>
+                    <div className="text-white font-semibold mb-1">
                       {language === 'ko' ? cat.nameKo : cat.name}
+                    </div>
+                    <div className="text-slate-500 text-xs">
+                      {language === 'ko' 
+                        ? (cat.id === 'accounts' ? '고급 계정 거래' : cat.id === 'items' ? '희귀 장비 아이템' : '골드 빠른 거래')
+                        : cat.desc
+                      }
                     </div>
                   </Link>
                 ))}
               </div>
             </section>
-
-            
 
             {/* Listings from Database */}
             <section>

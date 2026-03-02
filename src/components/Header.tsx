@@ -39,7 +39,6 @@ export default function Header() {
     { key: 'dashboard', href: '/dashboard', label: '用户中心' },
     { key: 'orders', href: '/dashboard/orders', label: '订单' },
     { key: 'listings', href: '/dashboard/listings', label: '挂售' },
-    { key: 'favorites', href: '/dashboard/favorites', label: '收藏' },
     { key: 'wallet', href: '/dashboard/wallet', label: '钱包' },
     { key: 'help', href: '/help' },
   ];
