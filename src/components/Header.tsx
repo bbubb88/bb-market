@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
@@ -20,10 +20,12 @@ export default function Header() {
     { id: 'KRW', symbol: '₩', name: '韩元' },
   ] as const;
 
-  // Store currency in localStorage for global access
-  if (typeof window !== 'undefined') {
-    window.localStorage?.setItem('bbmarket-currency', currency);
-  }
+  // Store currency in localStorage for global access (client-side only)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage?.setItem('bbmarket-currency', currency);
+    }
+  }, [currency]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

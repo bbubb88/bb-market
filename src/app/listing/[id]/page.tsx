@@ -39,10 +39,26 @@ export default function ListingDetailPage() {
   const [buying, setBuying] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
   const [error, setError] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<any>(null);
 
-  // 检查用户是否登录
-  const isLoggedIn = typeof window !== 'undefined' && localStorage.getItem('access_token');
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : null;
+  useEffect(() => {
+    // Check login status client-side only
+    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
+    const userData = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
+    setIsLoggedIn(!!token);
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
+    // Check login status client-side only
+    const token = localStorage.getItem('access_token');
+    const userData = localStorage.getItem('user');
+    setIsLoggedIn(!!token);
+    if (userData) {
+      setUser(JSON.parse(userData));
+    }
+  }, []);
 
   // 立即购买
   const handleBuy = async () => {

@@ -87,7 +87,7 @@ export default function CartPage() {
     
     // 将购物车数据存入 localStorage，准备结算
     localStorage.setItem('bbmarket_checkout', JSON.stringify(cartItems));
-    router.push('/dashboard?tab=orders');
+    router.push('/cart/checkout');
   };
 
   if (loading) {
