@@ -5,15 +5,23 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzx
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
 
 async function supabaseRequest(endpoint: string, options: RequestInit = {}) {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'apikey': supabaseKey,
+    'Authorization': `Bearer ${supabaseKey}`,
+    'Prefer': 'return=representation',
+  };
+  
+  if (options.headers) {
+    const optHeaders = options.headers as Record<string, string>;
+    if (optHeaders['Prefer']) {
+      headers['Prefer'] = optHeaders['Prefer'];
+    }
+  }
+
   const res = await fetch(`${supabaseUrl}/rest/v1/${endpoint}`, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': supabaseKey,
-      'Authorization': `Bearer ${supabaseKey}`,
-      'Prefer': options.headers?.['Prefer'] || 'return=representation',
-      ...options.headers,
-    },
+    headers,
   });
   const data = await res.json();
   return { status: res.status, data };

@@ -51,14 +51,6 @@ export default function ListingDetailPage() {
       setUser(JSON.parse(userData));
     }
   }, []);
-    // Check login status client-side only
-    const token = localStorage.getItem('access_token');
-    const userData = localStorage.getItem('user');
-    setIsLoggedIn(!!token);
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
-  }, []);
 
   // 立即购买
   const handleBuy = async () => {

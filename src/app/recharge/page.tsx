@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
@@ -17,7 +17,7 @@ interface RechargeRecord {
   expiresAt: string;
 }
 
-export default function RechargePage() {
+function RechargeContent() {
   const { language } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -403,5 +403,24 @@ export default function RechargePage() {
         </button>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-4xl mb-4">⏳</div>
+        <p className="text-slate-400">Loading...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function RechargePage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <RechargeContent />
+    </Suspense>
   );
 }
