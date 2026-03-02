@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
 import { Language } from '@/types';
 
 export default function Header() {
   const { language, setLanguage, t } = useI18n();
+  const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLangOpen, setIsLangOpen] = useState(false);
   const [currency, setCurrency] = useState('USDT');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const currencies = [
     { id: 'USDT', symbol: '$', name: 'USDT' },
@@ -22,9 +25,22 @@ export default function Header() {
     window.localStorage?.setItem('bbmarket-currency', currency);
   }
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setSearchQuery('');
+    }
+  };
+
   const navItems = [
     { key: 'home', href: '/' },
+    { key: 'cart', href: '/cart', icon: '🛒' },
     { key: 'dashboard', href: '/dashboard', label: '用户中心' },
+    { key: 'orders', href: '/dashboard/orders', label: '订单' },
+    { key: 'listings', href: '/dashboard/listings', label: '挂售' },
+    { key: 'favorites', href: '/dashboard/favorites', label: '收藏' },
+    { key: 'wallet', href: '/dashboard/wallet', label: '钱包' },
     { key: 'help', href: '/help' },
   ];
 
@@ -37,15 +53,39 @@ export default function Header() {
             <img src="/logo.svg" alt="BB Market" className="h-10" />
           </Link>
 
+          {/* Search Box - Desktop */}
+          <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-8">
+            <div className="relative w-full">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder={language === 'ko' ? '게임, 아이템 검색...' : '搜索游戏、道具...'}
+                className="w-full px-4 py-2 pl-10 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500 text-sm"
+              />
+              <svg 
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          </form>
+
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map((item) => (
               <Link
                 key={item.key}
                 href={item.href}
-                className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200"
+                className="px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all duration-200 flex items-center gap-2"
               >
-                {t(`nav.${item.key}`)}
+                {item.icon && <span>{item.icon}</span>}
+                {item.key === 'cart' 
+                  ? (language === 'ko' ? '장바구니' : '购物车')
+                  : t(`nav.${item.key}`)}
               </Link>
             ))}
           </nav>
@@ -138,14 +178,38 @@ export default function Header() {
         {/* Mobile Menu */}
         {isMenuOpen && (
           <nav className="md:hidden py-4 border-t border-slate-800">
+            {/* Mobile Search */}
+            <form onSubmit={handleSearch} className="mb-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={language === 'ko' ? '검색...' : '搜索...'}
+                  className="w-full px-4 py-3 pl-10 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
+                />
+                <svg 
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+            </form>
+            
             {navItems.map((item) => (
               <Link
                 key={item.key}
                 href={item.href}
                 onClick={() => setIsMenuOpen(false)}
-                className="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg"
+                className="block px-4 py-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg flex items-center gap-2"
               >
-                {t(`nav.${item.key}`)}
+                {item.icon && <span>{item.icon}</span>}
+                {item.key === 'cart' 
+                  ? (language === 'ko' ? '장바구니' : '购物车')
+                  : t(`nav.${item.key}`)}
               </Link>
             ))}
           </nav>
