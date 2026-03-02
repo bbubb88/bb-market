@@ -1,20 +1,41 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_G8mPUnYitGdICVH4Xm7cKA_e6Fi0Jya';
 
-// 客户端（用于前端读取）
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// 客户端（用于前端读取）- 单例
+let supabaseClient: SupabaseClient | null = null;
 
-// 服务端 Admin（有写入权限）
-export const getSupabaseAdmin = () => {
-  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
-  if (!serviceKey) {
-    // 如果没有 service key，使用 anon key（只读）
-    console.warn('SUPABASE_SERVICE_KEY not set, using anon key (read-only)');
-    return createClient(supabaseUrl, supabaseAnonKey);
+export const getSupabaseClient = () => {
+  if (!supabaseClient) {
+    supabaseClient = createClient(supabaseUrl, supabaseAnonKey);
   }
-  return createClient(supabaseUrl, serviceKey);
+  return supabaseClient;
+};
+
+// 客户端单例（别名）
+export const supabase = getSupabaseClient();
+
+// 服务端 Admin（有写入权限）- 单例
+let supabaseAdmin: SupabaseClient | null = null;
+
+export const getSupabaseAdmin = (): SupabaseClient => {
+  if (supabaseAdmin) {
+    return supabaseAdmin;
+  }
+
+  // 服务端使用 SERVICE_KEY（不是 NEXT_PUBLIC_，所以只能在 server side 使用）
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+  
+  if (!serviceKey) {
+    console.warn('⚠️ SUPABASE_SERVICE_KEY not set in environment variables');
+    // 回退到 anon key（只读）
+    supabaseAdmin = createClient(supabaseUrl, supabaseAnonKey);
+  } else {
+    supabaseAdmin = createClient(supabaseUrl, serviceKey);
+  }
+  
+  return supabaseAdmin;
 };
 
 // 默认导出用 anon key（安全）

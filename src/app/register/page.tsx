@@ -111,6 +111,7 @@ export default function RegisterPage() {
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 mb-3"
               required
+              autoComplete="email"
             />
             
             <input
@@ -121,6 +122,7 @@ export default function RegisterPage() {
               className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 mb-3"
               required
               minLength={6}
+              autoComplete="new-password"
             />
 
             <input
@@ -131,6 +133,7 @@ export default function RegisterPage() {
               className="w-full p-4 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-violet-500 mb-4"
               required
               minLength={6}
+              autoComplete="new-password"
             />
 
             <button 
