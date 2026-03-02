@@ -38,6 +38,7 @@ export default function ListingDetailPage() {
   const [showContact, setShowContact] = useState(false);
   const [buying, setBuying] = useState(false);
   const [orderCreated, setOrderCreated] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -54,46 +55,63 @@ export default function ListingDetailPage() {
 
   // 立即购买
   const handleBuy = async () => {
+    console.log('handleBuy called, isLoggedIn:', isLoggedIn, 'user:', user);
+    
     if (!isLoggedIn) {
       setShowLoginPrompt(true);
       return;
     }
 
-    if (!listing || !user?.id) {
+    if (!listing) {
+      setError('商品信息加载中，请稍候再试');
+      return;
+    }
+
+    if (!user?.id) {
       setError('用户信息无效，请重新登录');
       return;
     }
 
-    if (listing.sellerId === user.id) {
+    if (listing.sellerId === user.id || listing.sellerId === user.id?.toString()) {
       setError('不能购买自己的商品');
       return;
     }
 
     setBuying(true);
     setError('');
+    setShowLoginPrompt(false);
 
     try {
+      // 确保 listingId 是数字格式
+      const numericListingId = parseInt(listing.id, 10);
+      console.log('Creating order for listingId:', numericListingId, 'buyerId:', user.id);
+      
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          listingId: listing.id,
+          listingId: numericListingId,
           buyerId: user.id,
         }),
       });
 
       const data = await res.json();
+      console.log('Order response:', res.status, data);
 
       if (!res.ok) {
-        setError(data.error || '创建订单失败');
+        setError(data.error || `创建订单失败 (${res.status})`);
         return;
       }
 
       setOrderCreated(true);
-      // 跳转到用户中心查看订单
-      router.push('/dashboard?tab=orders');
+      setSuccessMessage('订单创建成功！');
+      // 延迟跳转到订单页面，让用户看到成功提示
+      setTimeout(() => {
+        router.push('/dashboard?tab=orders');
+      }, 1500);
     } catch (err) {
-      setError('网络错误，请重试');
+      console.error('Order error:', err);
+      setError('网络错误，请检查网络后重试');
     } finally {
       setBuying(false);
     }
@@ -261,11 +279,12 @@ export default function ListingDetailPage() {
               
               {/* Actions */}
               <button 
+                type="button"
                 onClick={handleBuy}
-                disabled={buying || listing.status !== 'SELLING'}
+                disabled={buying || !listing || listing.status !== 'SELLING'}
                 className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all mb-3 shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {buying ? '处理中...' : listing.status !== 'SELLING' ? '已下架' : '立即购买'}
+                {buying ? '⏳ 处理中...' : !listing ? '加载中...' : listing.status !== 'SELLING' ? '已下架' : '立即购买'}
               </button>
 
               {error && (
@@ -274,7 +293,14 @@ export default function ListingDetailPage() {
                 </div>
               )}
 
-              {orderCreated && (
+              {successMessage && (
+                <div className="mb-3 p-4 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
+                  <p className="text-emerald-400 font-medium">✅ {successMessage}</p>
+                  <p className="text-slate-300 text-sm mt-1">正在跳转到订单页面...</p>
+                </div>
+              )}
+
+              {orderCreated && !successMessage && (
                 <div className="mb-3 p-4 bg-emerald-900/30 border border-emerald-500/50 rounded-xl">
                   <p className="text-emerald-400 font-medium mb-2">✅ 订单创建成功！</p>
                   <p className="text-slate-300 text-sm mb-3">
