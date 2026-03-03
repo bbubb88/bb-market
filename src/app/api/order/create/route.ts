@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { notifyBuyerOfOrder } from '@/lib/discord';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -70,6 +71,50 @@ export async function POST(request: NextRequest) {
         { error: order.message || 'Failed to create order' },
         { status: orderRes.status }
       );
+    }
+
+    // 获取买家信息（用于发送 Discord 通知）
+    const buyerRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/User?id=eq.${buyerId}&select=id,discordId,username`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+      }
+    );
+    const buyers = await buyerRes.json();
+    
+    // 获取卖家信息
+    const sellerRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/User?id=eq.${listing.sellerId}&select=id,username`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+      }
+    );
+    const sellers = await sellerRes.json();
+
+    // 异步发送 Discord 通知（不阻塞响应）
+    if (buyers && buyers.length > 0 && buyers[0].discordId) {
+      const buyer = buyers[0];
+      const seller = sellers && sellers.length > 0 ? sellers[0] : { username: 'Unknown' };
+      
+      // 异步发送通知，不等待结果
+      notifyBuyerOfOrder(buyer.discordId, {
+        orderId: order[0]?.id || 'Unknown',
+        listingTitle: listing.title,
+        price: listing.price,
+        sellerName: seller.username || 'Unknown',
+      }).then(success => {
+        if (success) {
+          console.log('Discord notification sent to buyer:', buyer.discordId);
+        }
+      }).catch(err => {
+        console.error('Failed to send Discord notification:', err);
+      });
     }
 
     return NextResponse.json(order);

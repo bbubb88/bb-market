@@ -5,6 +5,9 @@ const DISCORD_CLIENT_ID = '1478033689853300746';
 const DISCORD_CLIENT_SECRET = 'yIpU5iIvNo8C-TeSjm9QD5OHrLbYFszP';
 const REDIRECT_URI = 'https://bb-market-next.vercel.app/api/auth/discord/callback';
 
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!;
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
@@ -75,9 +78,68 @@ export async function GET(request: NextRequest) {
       email = emailData.email;
     }
 
-    // 生成简单的 session token
+    // 第四步：保存或更新用户到 Supabase User 表
+    const discordId = userData.id;
+    const discordTag = `${userData.username}#${userData.discriminator || '0000'}`;
+    let dbUserId = null;
+    
+    // 查询是否已存在用户
+    const existingUserRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/User?discordId=eq.${discordId}&select=id`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+      }
+    );
+    const existingUsers = await existingUserRes.json();
+    
+    if (existingUsers && existingUsers.length > 0) {
+      // 用户已存在，更新 Discord 信息
+      dbUserId = existingUsers[0].id;
+      await fetch(`${SUPABASE_URL}/rest/v1/User?id=eq.${dbUserId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({
+          discordId,
+          discordTag,
+          email: email || null,
+          avatarUrl: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
+        }),
+      });
+      console.log('Updated user Discord info:', dbUserId);
+    } else {
+      // 创建新用户
+      dbUserId = crypto.randomUUID();
+      await fetch(`${SUPABASE_URL}/rest/v1/User`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({
+          id: dbUserId,
+          email: email || `${discordId}@discord.user`,
+          discordId,
+          discordTag,
+          username: userData.username,
+          avatarUrl: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null,
+          createdAt: new Date().toISOString(),
+        }),
+      });
+      console.log('Created new user with Discord:', dbUserId);
+    }
+
+    // 生成简单的 session token（使用数据库用户 ID）
     const sessionData = {
-      id: userData.id,
+      id: dbUserId,
+      discordId: userData.id,
       username: userData.username,
       email: email || `${userData.id}@discord.user`,
       avatar: userData.avatar,
