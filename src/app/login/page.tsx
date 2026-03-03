@@ -45,21 +45,14 @@ export default function LoginPage() {
     }
   };
 
-  // Discord OAuth 登录 - 直接使用 Supabase
+  // Discord OAuth 登录 - 直接跳转
   const handleDiscordLogin = async () => {
-    try {
-      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bb-market-next.vercel.app';
-      const redirectUri = `${siteUrl}/login/success`;
-      
-      // 使用 Supabase 的 Discord OAuth URL
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
-      const authorizeUrl = `${supabaseUrl}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(redirectUri)}`;
-      
-      // 跳转到 Discord 授权页面
-      window.location.href = authorizeUrl;
-    } catch (err) {
-      setError('网络错误，请重试');
-    }
+    // 直接跳转到 Discord 授权页面
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bb-market-next.vercel.app';
+    const redirectUri = `${siteUrl}/api/auth/discord/callback`;
+    const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=1478033689853300746&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=identify%20email`;
+    
+    window.location.href = discordAuthUrl;
   };
 
   return (

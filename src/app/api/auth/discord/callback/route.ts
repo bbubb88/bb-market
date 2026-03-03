@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY!;
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://bb-market-next.vercel.app/api/auth/discord/callback';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,25 +16,23 @@ export async function GET(request: NextRequest) {
     }
 
     if (!code) {
-      return NextResponse.redirect(new URL('/login?error=no_code', request.url));
+      // 没有 code，说明是第一步：引导用户去 Discord 授权
+      const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20email&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}`;
+      return NextResponse.redirect(new URL(discordAuthUrl, request.url));
     }
 
-    // 构建 Discord OAuth 回调 URL
-    const redirectUri = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/auth/discord/callback`;
-
-    // 使用 Supabase 的 OAuth 交换 code
-    // 先获取 provider token
-    const tokenResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=convert_session`, {
+    // 第二步：用 code 换取 access_token
+    const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-      body: JSON.stringify({
-        grant_type: 'convert_session',
+      body: new URLSearchParams({
+        client_id: DISCORD_CLIENT_ID!,
+        client_secret: DISCORD_CLIENT_SECRET!,
+        grant_type: 'authorization_code',
         code,
-        redirect_uri: redirectUri,
+        redirect_uri: DISCORD_REDIRECT_URI,
       }),
     });
 
@@ -44,11 +43,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=token_exchange_failed', request.url));
     }
 
-    // 获取用户信息
-    const userResponse = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+    const accessToken = tokenData.access_token;
+
+    // 第三步：用 access_token 获取用户信息
+    const userResponse = await fetch('https://discord.com/api/users/@me', {
       headers: {
-        'apikey': SUPABASE_SERVICE_KEY,
-        'Authorization': `Bearer ${tokenData.access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
     });
 
@@ -59,13 +59,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=get_user_failed', request.url));
     }
 
-    // 登录成功，返回 token 和用户信息
-    // 将 token 和 user 存入 URL 参数传递给前端（简化处理）
-    const userJson = encodeURIComponent(JSON.stringify(userData));
-    
-    // 跳转到登录成功页面，带上 token
+    // 生成简单的 session token（实际应该用 JWT）
+    const sessionToken = Buffer.from(JSON.stringify({
+      discordId: userData.id,
+      email: userData.email,
+      username: userData.username,
+      avatar: userData.avatar,
+    })).toString('base64');
+
+    // 跳转到成功页面，带上 session token
     return NextResponse.redirect(
-      new URL(`/login/success?access_token=${tokenData.access_token}&refresh_token=${tokenData.refresh_token || ''}&user=${userJson}`, request.url)
+      new URL(`/login/success?token=${sessionToken}`, request.url)
     );
   } catch (error) {
     console.error('Discord callback error:', error);

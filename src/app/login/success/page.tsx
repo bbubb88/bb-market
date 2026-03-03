@@ -8,75 +8,36 @@ export default function LoginSuccessPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 从 URL query 参数获取 token（我们的 API 回调方式）
     const searchParams = new URLSearchParams(window.location.search);
-    
-    const accessToken = searchParams.get('access_token');
-    const refreshToken = searchParams.get('refresh_token');
-    const userJson = searchParams.get('user');
+    const token = searchParams.get('token');
 
-    if (!accessToken) {
-      // 如果没有 token，检查 hash（Supabase 直接回调方式）
-      const hash = window.location.hash.substring(1);
-      const hashParams = new URLSearchParams(hash);
-      const hashAccessToken = hashParams.get('access_token');
-      const hashRefreshToken = hashParams.get('refresh_token');
-      
-      if (!hashAccessToken) {
-        setError('登录失败，请重试');
-        return;
-      }
-      
-      // 保存 hash 中的 token
-      localStorage.setItem('access_token', hashAccessToken);
-      if (hashRefreshToken) {
-        localStorage.setItem('refresh_token', hashRefreshToken);
-      }
-      
-      // 获取用户信息
-      fetchUserInfo(hashAccessToken);
+    if (!token) {
+      setError('登录失败，请重试');
       return;
     }
 
-    // 保存 query 参数中的 token
-    localStorage.setItem('access_token', accessToken);
-    if (refreshToken) {
-      localStorage.setItem('refresh_token', refreshToken);
-    }
-    if (userJson) {
-      try {
-        const userData = JSON.parse(decodeURIComponent(userJson));
-        localStorage.setItem('user', JSON.stringify(userData));
-      } catch (e) {
-        console.error('Parse user error:', e);
-      }
-    }
-
-    // 跳转到 dashboard
-    router.push('/dashboard');
-  }, [router]);
-
-  const fetchUserInfo = async (accessToken: string) => {
     try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
-      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
-        },
-      });
+      // 解析我们的 session token
+      const userData = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+      
+      // 保存用户信息
+      localStorage.setItem('access_token', token);
+      localStorage.setItem('user', JSON.stringify({
+        id: userData.discordId,
+        email: userData.email,
+        user_metadata: {
+          full_name: userData.username,
+          avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.discordId}/${userData.avatar}.png` : null
+        }
+      }));
 
-      if (res.ok) {
-        const userData = await res.json();
-        localStorage.setItem('user', JSON.stringify(userData));
-      }
-    } catch (err) {
-      console.error('Failed to fetch user info:', err);
-    } finally {
       // 跳转到 dashboard
       router.push('/dashboard');
+    } catch (e) {
+      console.error('Parse token error:', e);
+      setError('登录失败，请重试');
     }
-  };
+  }, [router]);
 
   if (error) {
     return (
