@@ -67,15 +67,14 @@ export default function CreateListingPage() {
         console.error('Failed to load games from DB:', error);
       }
       if (data && data.length > 0) {
-        // 去重：按ID过滤
-        const uniqueGames = data.filter((g: Game) => g.status === 'ACTIVE');
-        const seen = new Set();
-        const deduped = uniqueGames.filter((g: Game) => {
-          if (seen.has(g.id)) return false;
-          seen.add(g.id);
-          return true;
+        // 去重：按ID过滤，只保留第一个
+        const gameMap = new Map();
+        data.forEach((g: Game) => {
+          if (g.status === 'ACTIVE' && !gameMap.has(g.id)) {
+            gameMap.set(g.id, g);
+          }
         });
-        setGames(deduped);
+        setGames(Array.from(gameMap.values()));
       } else {
         // 使用默认游戏列表作为后备（已去重）
         setGames([
