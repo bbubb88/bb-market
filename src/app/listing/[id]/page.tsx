@@ -381,7 +381,7 @@ export default function ListingDetailPage() {
                 onClick={() => setShowContact(!showContact)}
                 className="w-full py-4 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-600 transition-all mb-6"
               >
-                💬 联系卖家
+                💬 咨询/还价
               </button>
 
               {/* Contact Info */}
@@ -401,11 +401,8 @@ export default function ListingDetailPage() {
                   </a>
                 </div>
               )}
-                      <div>
-                        <p className="text-white font-medium">💬 在线客服 (Discord)</p>
-                        <p className="text-white/70 text-xs">点击进入客服频道</p>
-                      </div>
-                    </a>
+
+              {/* WhatsApp / Discord / Telegram */}
                     
                     <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
                       <span className="text-2xl">💬</span>

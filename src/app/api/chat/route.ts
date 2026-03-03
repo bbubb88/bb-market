@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
+        'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -67,7 +67,19 @@ export async function POST(request: NextRequest) {
       }),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
+      const reply = data.choices?.[0]?.message?.content || '抱歉，我没有理解你的问题。';
+
+      return NextResponse.json({
+        success: true,
+        reply: reply,
+        from: 'ai'
+      });
+    }
+
+    // 成功响应
     const reply = data.choices?.[0]?.message?.content || '抱歉，我没有理解你的问题。';
 
     return NextResponse.json({

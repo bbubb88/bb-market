@@ -24,10 +24,11 @@ export default function LoginSuccessPage() {
       localStorage.setItem('access_token', token);
       localStorage.setItem('user', JSON.stringify({
         id: userData.id,
+        discordId: userData.discordId || userData.id,
         email: userData.email,
         user_metadata: {
           full_name: userData.username,
-          avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.id}/${userData.avatar}.png` : null
+          avatar_url: userData.avatar && userData.discordId ? `https://cdn.discordapp.com/avatars/${userData.discordId}/${userData.avatar}.png` : null
         }
       }));
 
