@@ -83,8 +83,8 @@ export async function GET(request: NextRequest) {
     const discordTag = `${userData.username}#${userData.discriminator || '0000'}`;
     let dbUserId = null;
     
-    // 查询是否已存在用户
-    const existingUserRes = await fetch(
+    // 查询是否已存在用户（先通过 discordId 查询，再通过 email 查询）
+    let existingUserRes = await fetch(
       `${SUPABASE_URL}/rest/v1/User?discordId=eq.${discordId}&select=id`,
       {
         headers: {
@@ -93,7 +93,21 @@ export async function GET(request: NextRequest) {
         },
       }
     );
-    const existingUsers = await existingUserRes.json();
+    let existingUsers = await existingUserRes.json();
+    
+    // 如果没有通过 discordId 找到，尝试通过邮箱查找（用户可能之前用邮箱注册）
+    if ((!existingUsers || existingUsers.length === 0) && email) {
+      existingUserRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/User?email=eq.${encodeURIComponent(email)}&select=id`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      existingUsers = await existingUserRes.json();
+    }
     
     if (existingUsers && existingUsers.length > 0) {
       // 用户已存在，更新 Discord 信息
