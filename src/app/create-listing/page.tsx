@@ -67,22 +67,26 @@ export default function CreateListingPage() {
         console.error('Failed to load games from DB:', error);
       }
       if (data && data.length > 0) {
-        setGames(data.filter((g: Game) => g.status === 'ACTIVE'));
+        // 去重：按ID过滤
+        const uniqueGames = data.filter((g: Game) => g.status === 'ACTIVE');
+        const seen = new Set();
+        const deduped = uniqueGames.filter((g: Game) => {
+          if (seen.has(g.id)) return false;
+          seen.add(g.id);
+          return true;
+        });
+        setGames(deduped);
       } else {
-        // 使用默认游戏列表作为后备
+        // 使用默认游戏列表作为后备（已去重）
         setGames([
-          { id: 'hit2', name: 'HIT 2', nameKo: 'HIT 2', icon: '🎮', iconUrl: null, status: 'ACTIVE' },
-          { id: 'brawl', name: 'Brawl Stars', nameKo: '브롤스타즈', icon: '⚔️', iconUrl: null, status: 'ACTIVE' },
-          { id: 'genshin', name: '原神', nameKo: '원신', icon: '🗡️', iconUrl: null, status: 'ACTIVE' },
+          { id: 'hit2', name: 'HIT2', nameKo: '히트2', icon: '🎮', iconUrl: null, status: 'ACTIVE' },
         ]);
       }
     } catch (error) {
       console.error('Failed to load games:', error);
-      // 使用默认游戏列表作为后备
+      // 使用默认游戏列表作为后备（已去重）
       setGames([
-        { id: 'hit2', name: 'HIT 2', nameKo: 'HIT 2', icon: '🎮', iconUrl: null, status: 'ACTIVE' },
-        { id: 'brawl', name: 'Brawl Stars', nameKo: '브롤스타즈', icon: '⚔️', iconUrl: null, status: 'ACTIVE' },
-        { id: 'genshin', name: '原神', nameKo: '원신', icon: '🗡️', iconUrl: null, status: 'ACTIVE' },
+        { id: 'hit2', name: 'HIT2', nameKo: '히트2', icon: '🎮', iconUrl: null, status: 'ACTIVE' },
       ]);
     }
     setLoading(false);

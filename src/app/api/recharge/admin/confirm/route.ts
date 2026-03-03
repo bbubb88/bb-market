@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 // 使用 Supabase Admin
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || '';
 
 async function supabaseRequest(endpoint: string, options: RequestInit = {}) {
   const headers: Record<string, string> = {
@@ -27,116 +27,111 @@ async function supabaseRequest(endpoint: string, options: RequestInit = {}) {
   return { status: res.status, data };
 }
 
-// 管理员确认充值
+/**
+ * 管理员确认充值 API v2
+ * 充值资金进入托管账户（不在平台账户）
+ */
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { rechargeId, action } = body; // action: 'approve' | 'reject'
+    const { rechargeId, action, depositId } = body;
 
-    if (!rechargeId || !action) {
+    // 支持两种参数：rechargeId（旧接口兼容）或 depositId（新接口）
+    const targetId = depositId || rechargeId;
+    const table = depositId ? 'EscrowDeposit' : 'recharge';
+
+    if (!targetId || !action) {
       return NextResponse.json(
-        { error: 'Recharge ID and action required' },
+        { error: 'ID and action required' },
         { status: 400 }
       );
     }
 
-    // 先获取充值记录
-    const { status: getStatus, data: rechargeData } = await supabaseRequest(
-      `recharge?id=eq.${rechargeId}&select=*`
+    // 获取充值记录
+    const { status: getStatus, data: records } = await supabaseRequest(
+      `${table}?id=eq.${targetId}&select=*`
     );
 
-    if (getStatus >= 400 || !rechargeData || rechargeData.length === 0) {
+    if (getStatus >= 400 || !records || records.length === 0) {
       return NextResponse.json(
-        { error: 'Recharge record not found' },
+        { error: 'Record not found' },
         { status: 404 }
       );
     }
 
-    const recharge = rechargeData[0];
+    const record = records[0];
 
     if (action === 'approve') {
+      const now = new Date().toISOString();
+
       // 更新充值状态为已完成
-      const { status: updateStatus } = await supabaseRequest(
-        `recharge?id=eq.${rechargeId}`,
-        {
-          method: 'PATCH',
+      await supabaseRequest(`${table}?id=eq.${targetId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'CONFIRMED',
+          confirmedAt: now,
+        }),
+      });
+
+      // 获取或创建用户钱包
+      let { status: walletStatus, data: wallets } = await supabaseRequest(
+        `Wallet?userId=eq.${record.userId}&select=*`
+      );
+
+      let wallet;
+      if (walletStatus !== 200 || !wallets || wallets.length === 0) {
+        const { data: newWallets } = await supabaseRequest('Wallet', {
+          method: 'POST',
           body: JSON.stringify({
-            status: 'completed',
-            completedAt: new Date().toISOString(),
+            userId: record.userId,
+            balance: 0,
+            escrowBalance: 0,
+            locked: 0,
           }),
-        }
-      );
-
-      if (updateStatus >= 400) {
-        return NextResponse.json(
-          { error: 'Failed to update recharge status' },
-          { status: 500 }
-        );
+        });
+        wallet = newWallets[0];
+      } else {
+        wallet = wallets[0];
       }
 
-      // 获取当前用户余额
-      const { status: userStatus, data: userData } = await supabaseRequest(
-        `user?id=eq.${recharge.userId}&select=balance`
-      );
+      // 资金进入托管余额（不在平台账户）
+      const currentEscrow = parseFloat(wallet.escrowBalance || '0');
+      
+      await supabaseRequest(`Wallet?id=eq.${wallet.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          escrowBalance: currentEscrow + record.amount,
+          updatedAt: now,
+        }),
+      });
 
-      let newBalance = recharge.amount;
-      if (userStatus === 200 && userData && userData.length > 0) {
-        newBalance = (userData[0].balance || 0) + recharge.amount;
-      }
-
-      // 更新用户余额
-      const { status: balanceStatus } = await supabaseRequest(
-        `user?id=eq.${recharge.userId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({
-            balance: newBalance,
-          }),
-        }
-      );
-
-      if (balanceStatus >= 400) {
-        console.error('Failed to update user balance');
-      }
-
-      // 创建交易记录
-      await supabaseRequest('transaction', {
+      // 记录交易
+      await supabaseRequest('EscrowTransaction', {
         method: 'POST',
         body: JSON.stringify({
-          userId: recharge.userId,
-          type: 'deposit',
-          amount: recharge.amount,
-          status: 'completed',
-          description: `USDT 充值 - ${recharge.amount} USDT`,
-          createdAt: new Date().toISOString(),
+          userId: record.userId,
+          type: 'DEPOSIT',
+          amount: record.amount,
+          status: 'COMPLETED',
+          description: `托管充值确认 - ${record.amount} USDT`,
+          createdAt: now,
         }),
       });
 
       return NextResponse.json({
         success: true,
-        message: 'Recharge approved and balance updated',
-        newBalance,
+        message: 'Recharge confirmed - funds in escrow',
+        escrowBalance: currentEscrow + record.amount,
       });
 
     } else if (action === 'reject') {
-      // 拒绝充值
-      const { status: updateStatus } = await supabaseRequest(
-        `recharge?id=eq.${rechargeId}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({
-            status: 'rejected',
-            completedAt: new Date().toISOString(),
-          }),
-        }
-      );
-
-      if (updateStatus >= 400) {
-        return NextResponse.json(
-          { error: 'Failed to update recharge status' },
-          { status: 500 }
-        );
-      }
+      await supabaseRequest(`${table}?id=eq.${targetId}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          status: 'FAILED',
+          confirmedAt: new Date().toISOString(),
+        }),
+      });
 
       return NextResponse.json({
         success: true,
