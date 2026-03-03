@@ -109,7 +109,7 @@ export default function ListingDetailPage() {
       console.log('Creating order - buyerId:', buyerId, 'listingId:', listingId, 'user:', user);
       
       if (!buyerId) {
-        setError('用户未登录，请先登录');
+        setError('请先登录后再购买');
         setBuying(false);
         router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
         return;
