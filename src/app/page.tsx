@@ -314,22 +314,19 @@ export default function Home() {
 
           {/* Right Sidebar */}
           <div className="lg:w-80">
-            {/* Customer Service */}
+            {/* Customer Service - Online Chat */}
             <div className="bg-gradient-to-r from-violet-900/50 to-purple-900/50 rounded-xl p-4 border border-violet-500/30 mb-4">
-              <h3 className="text-white font-semibold mb-3">客服中心</h3>
-              <div className="space-y-2 text-sm">
-                <p className="text-slate-300">
-                  <span className="text-violet-400">📞</span> 电话：+852 4406 0902
+              <h3 className="text-white font-semibold mb-3">💬 在线客服</h3>
+              <div className="space-y-2">
+                <p className="text-slate-300 text-sm">
+                  7×24小时在线，有问题随时问！
                 </p>
-                <p className="text-slate-300">
-                  <span className="text-violet-400">✉️</span> Email: support@bbmarket.com
-                </p>
-                <p className="text-slate-300">
-                  <span className="text-violet-400">✈️</span> Telegram: @bbmarket
-                </p>
-                <p className="text-slate-500 text-xs mt-2">
-                  服务时间：全天 24小时在线
-                </p>
+                <Link 
+                  href="/chat"
+                  className="block w-full py-2 bg-violet-600 hover:bg-violet-500 text-white text-center rounded-lg text-sm font-medium transition-colors"
+                >
+                  联系客服
+                </Link>
               </div>
             </div>
 

@@ -19,8 +19,7 @@ export default function Footer() {
     {
       title: '联系方式',
       links: [
-        { text: 'Email: support@bbmarket.com', href: 'mailto:support@bbmarket.com' },
-        { text: 'Telegram: @bbmarket', href: 'https://t.me/bbmarket' },
+        { text: '在线客服', href: '/chat' },
       ],
     },
   ];
