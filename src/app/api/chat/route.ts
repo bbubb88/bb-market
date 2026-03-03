@@ -1,102 +1,74 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-
-// 简单内存存储（生产环境应该用数据库）
-const messages: Array<{
-  id: number;
-  userId: string;
-  userEmail: string;
-  message: string;
-  isFromAdmin: boolean;
-  adminId: string;
-  createdAt: string;
-  read: boolean;
-}> = [];
-
-let messageId = 1;
-
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-    const admin = searchParams.get('admin');
-
-    if (admin === 'true') {
-      // 客服查看所有消息
-      return NextResponse.json({ 
-        messages: messages.filter(m => !m.isFromAdmin).reverse() 
-      });
-    }
-
-    // 用户查看自己的消息
-    if (userId) {
-      const userMessages = messages.filter(m => m.userId === userId);
-      return NextResponse.json({ messages: userMessages });
-    }
-
-    return NextResponse.json({ messages: [] });
-  } catch (error) {
-    return NextResponse.json({ error: '获取消息失败' }, { status: 500 });
+// 简单的客服 Agent 回复逻辑
+function generateReply(userMessage: string): string {
+  const msg = userMessage.toLowerCase();
+  
+  // 常见问题回复
+  if (msg.includes('你好') || msg.includes('hello') || msg.includes('hi')) {
+    return '你好！欢迎来到 BB Market！有什么可以帮助你的？';
   }
+  
+  if (msg.includes('怎么') || msg.includes('如何')) {
+    if (msg.includes('买') || msg.includes('购买')) {
+      return '购买流程：1. 注册账号 → 2. 选择商品 → 3. USDT 支付 → 4. 收到商品。有任何问题可以随时问我！';
+    }
+    if (msg.includes('卖') || msg.includes('挂售')) {
+      return '挂售流程：1. 登录账号 → 2. 点击"挂售" → 3. 填写商品信息 → 4. 等待买家购买。保证金安全有保障！';
+    }
+    if (msg.includes('支付') || msg.includes('付款')) {
+      return '我们支持 USDT (TRC20) 支付，安全快速！最低充值 5 USDT。';
+    }
+    return '请告诉我具体你想了解什么？我会尽力帮助你的！';
+  }
+  
+  if (msg.includes('价格') || msg.includes('多少钱')) {
+    return '不同商品价格不同，您可以访问 https://bb-market-next.vercel.app 选择游戏和商品查看具体价格。';
+  }
+  
+  if (msg.includes('游戏')) {
+    return '我们支持 HIT2 等热门游戏的账号、道具、金币交易！访问首页选择您感兴趣的游戏。';
+  }
+  
+  if (msg.includes('安全') || msg.includes('靠谱')) {
+    return '我们提供资金担保交易！买家确认收货后才放行资金，7×24客服保障，安全无忧！';
+  }
+  
+  if (msg.includes('联系') || msg.includes('客服') || msg.includes('人工')) {
+    return '我是 AI 客服，可以解答大部分问题。如需人工服务，请发送邮件至 support@bbmarket.com';
+  }
+  
+  if (msg.includes('谢谢') || msg.includes('感谢')) {
+    return '不客气！很高兴能帮到你！还有其他问题吗？';
+  }
+  
+  // 默认回复
+  return '感谢您的消息！我是 BB Market 智能客服，已经记录您的问题。一般问题我可以即时解答，复杂问题会转交人工处理。请问还有什么可以帮到你？';
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, userEmail, userId, adminId, adminReply, adminMode } = body;
+    const { message, userEmail, userId, adminMode } = body;
 
-    if (adminMode === 'true' && adminId) {
-      // 客服回复消息
-      const newMessage = {
-        id: messageId++,
-        userId: userId || 'admin',
-        userEmail: adminId,
-        message: message,
-        isFromAdmin: true,
-        adminId: adminId,
-        createdAt: new Date().toISOString(),
-        read: false,
-      };
-      messages.push(newMessage);
-      return NextResponse.json({ success: true, message: '回复成功' });
+    // 客服人工回复模式
+    if (adminMode === 'true') {
+      // 人工回复逻辑（在另一个 API 处理）
+      return NextResponse.json({ success: true, from: 'admin' });
     }
 
     if (!message) {
       return NextResponse.json({ error: '消息不能为空' }, { status: 400 });
     }
 
-    // 用户发送消息
-    const newMessage = {
-      id: messageId++,
-      userId: userId || `guest_${Date.now()}`,
-      userEmail: userEmail || '游客',
-      message: message,
-      isFromAdmin: false,
-      adminId: '',
-      createdAt: new Date().toISOString(),
-      read: false,
-    };
-    messages.push(newMessage);
+    // 生成 AI 回复
+    const reply = generateReply(message);
 
-    // 发送到 Discord（如果有配置）
-    if (DISCORD_BOT_TOKEN) {
-      const channelId = process.env.DISCORD_SUPPORT_CHANNEL_ID;
-      if (channelId) {
-        await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bot ${DISCORD_BOT_TOKEN}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            content: `📬 **新客服消息**\n**用户:** ${userEmail || '游客'}\n**消息:** ${message}`
-          }),
-        });
-      }
-    }
-
-    return NextResponse.json({ success: true, message: '发送成功' });
+    return NextResponse.json({ 
+      success: true, 
+      reply: reply,
+      from: 'ai'
+    });
   } catch (error) {
     console.error('Chat API error:', error);
     return NextResponse.json({ error: '服务器错误' }, { status: 500 });

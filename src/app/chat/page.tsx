@@ -5,49 +5,30 @@ import Link from 'next/link';
 
 interface Message {
   id: number;
-  userId: string;
-  userEmail: string;
-  message: string;
-  isFromAdmin: boolean;
-  createdAt: string;
+  text: string;
+  isUser: boolean;
+  isAI: boolean;
+  time: string;
 }
 
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [userId, setUserId] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // 初始化用户 ID
+  // 初始化欢迎消息
   useEffect(() => {
-    const stored = localStorage.getItem('user');
-    if (stored) {
-      const user = JSON.parse(stored);
-      setUserId(user.id || user.user_metadata?.id || `guest_${Date.now()}`);
-    } else {
-      setUserId(`guest_${Date.now()}`);
-    }
-  }, []);
-
-  // 轮询获取消息
-  useEffect(() => {
-    if (!userId) return;
-
-    const fetchMessages = async () => {
-      try {
-        const res = await fetch(`/api/chat?userId=${userId}`);
-        const data = await res.json();
-        setMessages(data.messages || []);
-      } catch (err) {
-        console.error('Fetch messages error:', err);
+    setMessages([
+      {
+        id: 1,
+        text: '你好！我是 BB Market 智能客服 🤖\n\n有什么可以帮助你的？',
+        isUser: false,
+        isAI: true,
+        time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
       }
-    };
-
-    fetchMessages();
-    const interval = setInterval(fetchMessages, 2000);
-    return () => clearInterval(interval);
-  }, [userId]);
+    ]);
+  }, []);
 
   // 自动滚动到底部
   useEffect(() => {
@@ -57,13 +38,26 @@ export default function ChatPage() {
   const sendMessage = async () => {
     if (!input.trim() || sending) return;
 
-    const userStr = localStorage.getItem('user');
-    const user = userStr ? JSON.parse(userStr) : null;
-    const userEmail = user?.email || user?.user_metadata?.email || '游客';
+    const userMessage: Message = {
+      id: Date.now(),
+      text: input,
+      isUser: true,
+      isAI: false,
+      time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+    };
 
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
     setSending(true);
+
     try {
-      await fetch('/api/chat', {
+      // 获取用户信息
+      const userStr = localStorage.getItem('user');
+      const user = userStr ? JSON.parse(userStr) : null;
+      const userEmail = user?.email || user?.user_metadata?.email || null;
+      const userId = user?.id || null;
+
+      const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -72,7 +66,20 @@ export default function ChatPage() {
           userId,
         }),
       });
-      setInput('');
+
+      const data = await res.json();
+
+      if (data.success && data.reply) {
+        // 添加 AI 回复
+        const aiReply: Message = {
+          id: Date.now() + 1,
+          text: data.reply,
+          isUser: false,
+          isAI: true,
+          time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
+        };
+        setMessages(prev => [...prev, aiReply]);
+      }
     } catch (err) {
       console.error('Send message error:', err);
     } finally {
@@ -95,7 +102,10 @@ export default function ChatPage() {
           <Link href="/" className="text-violet-400 hover:text-violet-300">
             ← 返回首页
           </Link>
-          <h1 className="text-white font-semibold">💬 在线客服</h1>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <h1 className="text-white font-semibold">🤖 智能客服</h1>
+          </div>
           <div className="w-16"></div>
         </div>
       </header>
@@ -105,33 +115,33 @@ export default function ChatPage() {
         <div className="bg-slate-800 rounded-xl border border-slate-700 h-[calc(100vh-220px)] flex flex-col">
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.length === 0 ? (
-              <div className="text-center text-slate-500 py-8">
-                <p className="text-lg mb-2">👋 您好！</p>
-                <p>欢迎来到 BB Market 客服中心</p>
-                <p className="text-sm mt-2">请发送消息，客服会尽快回复您</p>
-              </div>
-            ) : (
-              messages.map(msg => (
+            {messages.map(msg => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.isUser ? 'justify-end' : 'justify-start'}`}
+              >
                 <div
-                  key={msg.id}
-                  className={`flex ${msg.isFromAdmin ? 'justify-end' : 'justify-start'}`}
+                  className={`max-w-[80%] rounded-xl p-3 ${
+                    msg.isUser
+                      ? 'bg-violet-600 text-white'
+                      : msg.isAI
+                      ? 'bg-slate-700 text-slate-200 border border-violet-500/30'
+                      : 'bg-slate-700 text-slate-200'
+                  }`}
                 >
-                  <div
-                    className={`max-w-[70%] rounded-xl p-3 ${
-                      msg.isFromAdmin
-                        ? 'bg-violet-600 text-white'
-                        : 'bg-slate-700 text-slate-200'
-                    }`}
-                  >
-                    <p className="text-sm">{msg.message}</p>
-                    <p className={`text-xs mt-1 ${msg.isFromAdmin ? 'text-violet-200' : 'text-slate-400'}`}>
-                      {msg.isFromAdmin ? '客服' : '您'} • {new Date(msg.createdAt).toLocaleString('zh-CN')}
-                    </p>
-                  </div>
+                  {!msg.isUser && (
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🤖</span>
+                      <span className="text-violet-400 text-sm font-medium">BB Market 客服</span>
+                    </div>
+                  )}
+                  <p className="text-sm whitespace-pre-line">{msg.text}</p>
+                  <p className={`text-xs mt-1 ${msg.isUser ? 'text-violet-200' : 'text-slate-400'}`}>
+                    {msg.time}
+                  </p>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
             <div ref={messagesEndRef} />
           </div>
 
@@ -143,7 +153,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder="输入您的消息..."
+                placeholder="输入你的问题..."
                 className="flex-1 p-3 bg-slate-700 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-violet-500"
                 disabled={sending}
               />
@@ -161,7 +171,7 @@ export default function ChatPage() {
 
       {/* Footer Info */}
       <div className="text-center py-4 text-slate-500 text-sm">
-        <p>工作时间: 7×24 小时在线 | 或联系：📧 support@bbmarket.com</p>
+        <p>💡 智能客服 7×24 小时在线 | 发送邮件至 support@bbmarket.com</p>
       </div>
     </div>
   );
