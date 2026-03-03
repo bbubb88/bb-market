@@ -18,20 +18,17 @@ const getSiteUrl = (): string => process.env.NEXT_PUBLIC_SITE_URL || 'https://bb
  * 创建 Cryptomus 客户端
  */
 export function getCryptomusClient(): CryptomusClient | null {
-  const merchantId = getMerchantId();
   const paymentKey = getPaymentKey();
-  const payoutKey = getPayoutKey();
 
-  if (!merchantId || !paymentKey) {
-    console.error('[Cryptomus] API keys not configured');
+  // 只需要 Payment Key
+  if (!paymentKey) {
+    console.error('[Cryptomus] API key not configured');
     return null;
   }
 
   try {
     return new CryptomusClient({
-      merchantId: merchantId,
       paymentKey: paymentKey,
-      payoutKey: payoutKey || undefined,
     } as any);
   } catch (error) {
     console.error('[Cryptomus] Failed to create client:', error);
