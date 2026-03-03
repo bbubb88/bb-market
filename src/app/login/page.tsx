@@ -45,16 +45,28 @@ export default function LoginPage() {
 
   // Discord OAuth 登录 - 使用 Supabase 官方 SDK
   const handleDiscordLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'discord',
-      options: {
-        redirectTo: `${window.location.origin}/login/success`,
-      },
-    });
-    
-    if (error) {
-      console.error('Discord login error:', error);
-      setError('Discord登录失败，请重试');
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'discord',
+        options: {
+          redirectTo: `${window.location.origin}/login/success`,
+          scopes: 'email identify',
+        },
+      });
+      
+      if (error) {
+        console.error('Discord login error:', error);
+        setError(`登录失败: ${error.message}`);
+      } else if (data.url) {
+        // 跳转到 Discord
+        window.location.href = data.url;
+      }
+    } catch (err: any) {
+      console.error('Discord login catch error:', err);
+      setError(`登录失败: ${err.message || '未知错误'}`);
+    } finally {
+      setLoading(false);
     }
   };
 
