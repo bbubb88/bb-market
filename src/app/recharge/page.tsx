@@ -20,6 +20,11 @@ interface RechargeRecord {
   nowpaymentsId?: number;
   payAmount?: number;
   payCurrency?: string;
+  // Cryptomus 字段
+  cryptomusUuid?: string;
+  currency?: string;
+  network?: string;
+  // 通用字段
   qrCodeUrl?: string;
   fallback?: boolean;
 }
@@ -51,7 +56,7 @@ function RechargeContent() {
     setLoading(false);
   }, []);
 
-  // 生成充值记录 - 优先使用 NowPayments
+  // 生成充值记录 - 优先使用 Cryptomus，然后 NowPayments
   const createRechargeRecord = useCallback(async () => {
     if (!user || !amount || parseFloat(amount) <= 0) return;
 
@@ -60,8 +65,12 @@ function RechargeContent() {
       // 解析订单ID列表
       const orderIds = orderIdsParam ? orderIdsParam.split(',') : [];
       
-      // 优先尝试 NowPayments API
-      const nowpaymentsRes = await fetch('/api/recharge/nowpayments/create', {
+      // 1. 优先尝试 Cryptomus API
+      let data = null;
+      let usedCryptomus = false;
+      let usedNowPayments = false;
+      
+      const cryptomusRes = await fetch('/api/recharge/cryptomus/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,17 +80,33 @@ function RechargeContent() {
         }),
       });
 
-      let data;
-      let usedNowPayments = false;
-      
-      if (nowpaymentsRes.ok) {
-        data = await nowpaymentsRes.json();
-        usedNowPayments = !data.fallback;
-        console.log('[Recharge] Using NowPayments:', usedNowPayments);
+      if (cryptomusRes.ok) {
+        data = await cryptomusRes.json();
+        usedCryptomus = !data.fallback;
+        console.log('[Recharge] Using Cryptomus:', usedCryptomus);
       }
 
-      // 如果 NowPayments 失败，使用传统方式
-      if (!usedNowPayments) {
+      // 2. 如果 Cryptomus 失败，尝试 NowPayments API
+      if (!usedCryptomus) {
+        const nowpaymentsRes = await fetch('/api/recharge/nowpayments/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            amount: parseFloat(amount),
+            orderIds: orderIds.length > 0 ? orderIds : undefined,
+          }),
+        });
+        
+        if (nowpaymentsRes.ok) {
+          data = await nowpaymentsRes.json();
+          usedNowPayments = !data.fallback;
+          console.log('[Recharge] Using NowPayments:', usedNowPayments);
+        }
+      }
+
+      // 3. 如果都失败，使用传统方式
+      if (!usedCryptomus && !usedNowPayments) {
         const res = await fetch('/api/recharge/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -152,13 +177,19 @@ function RechargeContent() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // NowPayments 支付状态轮询
+  // 支付状态轮询 (支持 NowPayments 和 Cryptomus)
   useEffect(() => {
-    if (!record?.id || record.fallback) return; // 只对 NowPayments 支付轮询
+    if (!record?.id || record.fallback) return;
 
     const checkStatus = async () => {
       try {
-        const res = await fetch(`/api/recharge/nowpayments/status?rechargeId=${record.id}`);
+        // 根据是否有 cryptomusUuid 判断使用哪个 API
+        let statusUrl = `/api/recharge/nowpayments/status?rechargeId=${record.id}`;
+        if (record.cryptomusUuid) {
+          statusUrl = `/api/recharge/cryptomus/status?rechargeId=${record.id}&walletUuid=${record.cryptomusUuid}`;
+        }
+        
+        const res = await fetch(statusUrl);
         if (res.ok) {
           const data = await res.json();
           if (data.status === 'completed') {
