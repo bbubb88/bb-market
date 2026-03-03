@@ -38,25 +38,33 @@ export default function Home() {
   const loadListings = async () => {
     setLoading(true);
     try {
+      // 数据库中 type 字段有大小写两种格式，需要同时查询
       const typeMap = {
-        accounts: 'ACCOUNT',
-        items: 'ITEM', 
-        coins: 'COIN'
+        accounts: ['ACCOUNT', 'account'],
+        items: ['ITEM', 'item'], 
+        coins: ['COIN', 'coin']
       };
       
+      const types = typeMap[activeTab] || ['ACCOUNT'];
+      
+      // 使用 or 查询来匹配大小写
       const { data } = await db.getListings({ 
-        type: typeMap[activeTab],
         status: 'SELLING'
       });
       
-      if (data) {
-        let sorted = [...data];
+      // 过滤匹配当前 tab 的类型
+      const filteredData = data?.filter((item: any) => 
+        types.includes(item.type)
+      ) || [];
+      
+      if (filteredData) {
+        let sorted = [...filteredData];
         if (sortBy === 'price-low') {
-          sorted = sorted.sort((a, b) => a.price - b.price);
+          sorted = sorted.sort((a: any, b: any) => a.price - b.price);
         } else if (sortBy === 'price-high') {
-          sorted = sorted.sort((a, b) => b.price - a.price);
+          sorted = sorted.sort((a: any, b: any) => b.price - a.price);
         } else {
-          sorted = sorted.sort((a, b) => 
+          sorted = sorted.sort((a: any, b: any) => 
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
         }

@@ -4,12 +4,12 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!;
 
 /**
- * 订单支付 API v2
- * 使用托管余额支付
+ * 订单支付 API 
+ * 使用钱包余额直接支付（简化版）
  */
 export async function POST(request: NextRequest) {
   try {
-    const { orderIds, userId, totalAmount, useEscrow = true } = await request.json();
+    const { orderIds, userId, totalAmount } = await request.json();
 
     if (!orderIds || !userId || !totalAmount) {
       return NextResponse.json(
@@ -53,8 +53,7 @@ export async function POST(request: NextRequest) {
         body: JSON.stringify({
           userId,
           balance: 0,
-          escrowBalance: 0,
-          locked: 0,
+          frozen: 0,
         }),
       });
       
@@ -71,128 +70,23 @@ export async function POST(request: NextRequest) {
       wallet = wallets[0];
     }
 
-    let currentEscrowBalance = parseFloat(wallet.escrowBalance || '0');
     let currentBalance = parseFloat(wallet.balance || '0');
+    let currentFrozen = parseFloat(wallet.frozen || '0');
 
-    if (useEscrow) {
-      // 使用托管余额支付（资金在第三方托管）
-      if (currentEscrowBalance < totalAmount) {
-        return NextResponse.json(
-          { 
-            error: 'Insufficient escrow balance', 
-            escrowBalance: currentEscrowBalance, 
-            required: totalAmount,
-            tip: 'Please deposit USDT to escrow first'
-          },
-          { status: 400 }
-        );
-      }
-
-      // 减少托管余额，增加锁定金额
-      const newEscrowBalance = Math.round((currentEscrowBalance - totalAmount) * 100) / 100;
-      const currentLocked = parseFloat(wallet.locked || '0');
-      const newLocked = currentLocked + totalAmount;
-
-      const updateWalletRes = await fetch(
-        `${SUPABASE_URL}/rest/v1/Wallet?id=eq.${wallet.id}`,
-        {
-          method: 'PATCH',
-          headers: {
-            'Content-Type': 'application/json',
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`,
-            'Prefer': 'return=representation',
-          },
-          body: JSON.stringify({ 
-            escrowBalance: newEscrowBalance,
-            locked: newLocked,
-            updatedAt: new Date().toISOString(),
-          }),
-        }
-      );
-
-      const updatedWallet = await updateWalletRes.json();
-
-      if (!updateWalletRes.ok) {
-        console.error('Failed to update wallet:', updatedWallet);
-        return NextResponse.json(
-          { error: 'Failed to lock funds' },
-          { status: 500 }
-        );
-      }
-
-      // 为每个订单创建托管锁定记录
-      const now = new Date().toISOString();
-      for (const orderId of orderIds) {
-        // 获取订单金额
-        const orderRes = await fetch(
-          `${SUPABASE_URL}/rest/v1/Order?id=eq.${orderId}&select=*`,
-          {
-            headers: {
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            },
-          }
-        );
-        const orders = await orderRes.json();
-        
-        if (orders && orders.length > 0) {
-          const order = orders[0];
-          const orderTotal = order.price + (order.fee || 0);
-
-          // 创建托管锁定记录
-          await fetch(`${SUPABASE_URL}/rest/v1/EscrowLock`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            },
-            body: JSON.stringify({
-              orderId: orderId,
-              buyerId: userId,
-              amount: order.price,
-              fee: order.fee || 0,
-              totalAmount: orderTotal,
-              status: 'LOCKED',
-              createdAt: now,
-            }),
-          });
-
-          // 记录托管交易
-          await fetch(`${SUPABASE_URL}/rest/v1/EscrowTransaction`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_KEY,
-              'Authorization': `Bearer ${SUPABASE_KEY}`,
-            },
-            body: JSON.stringify({
-              userId: userId,
-              orderId: orderId,
-              type: 'LOCK',
-              amount: orderTotal,
-              status: 'COMPLETED',
-              description: `订单支付锁定 - ${orderTotal} USDT`,
-              createdAt: now,
-            }),
-          });
-        }
-      }
-
-    } else {
-      // 使用普通可用余额支付（不支持，因为资金不在平台账户）
+    // 验证余额
+    if (currentBalance < totalAmount) {
       return NextResponse.json(
         { 
-          error: 'Direct balance payment not supported', 
-          message: 'Please use escrow balance for payment',
-          tip: 'All payments must go through escrow for security'
+          error: 'Insufficient balance', 
+          balance: currentBalance, 
+          required: totalAmount,
+          tip: '请先充值后再试'
         },
         { status: 400 }
       );
     }
 
-    // 2. 获取订单信息验证
+    // 获取订单信息验证
     const orderIdsStr = orderIds.join(',');
     const ordersRes = await fetch(
       `${SUPABASE_URL}/rest/v1/Order?id=in.(${orderIdsStr})&select=*`,
@@ -229,7 +123,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 3. 更新订单状态为 PAID
+    // 2. 更新订单状态为 PAID
     const now = new Date().toISOString();
     const updateOrdersRes = await fetch(
       `${SUPABASE_URL}/rest/v1/Order?id=in.(${orderIdsStr})`,
@@ -245,8 +139,6 @@ export async function POST(request: NextRequest) {
           status: 'PAID',
           updatedAt: now,
           paidAt: now,
-          escrowStatus: 'LOCKED',
-          escrowLockedAt: now,
         }),
       }
     );
@@ -261,24 +153,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. 获取更新后的钱包信息
-    const finalWalletRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/Wallet?id=eq.${wallet.id}&select=*`,
+    // 3. 扣除钱包余额
+    const newBalance = Math.round((currentBalance - totalAmount) * 100) / 100;
+    const updateWalletRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/Wallet?id=eq.${wallet.id}`,
       {
+        method: 'PATCH',
         headers: {
+          'Content-Type': 'application/json',
           'apikey': SUPABASE_KEY,
           'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Prefer': 'return=representation',
         },
+        body: JSON.stringify({ 
+          balance: newBalance.toString(),
+          updatedAt: now,
+        }),
       }
     );
-    const finalWallet = await finalWalletRes.json();
 
+    // 4. 返回结果
     return NextResponse.json({
       success: true,
-      message: 'Payment successful - funds locked in escrow',
-      escrow: true,
-      escrowBalance: finalWallet[0]?.escrowBalance || 0,
-      locked: finalWallet[0]?.locked || 0,
+      message: 'Payment successful',
+      newBalance: newBalance,
       paidOrders: updatedOrders,
     });
 
@@ -319,15 +217,13 @@ export async function GET(request: NextRequest) {
     if (!wallets || wallets.length === 0) {
       return NextResponse.json({
         balance: 0,
-        escrowBalance: 0,
-        locked: 0,
+        frozen: 0,
       });
     }
 
     return NextResponse.json({
-      balance: wallets[0].balance || 0,
-      escrowBalance: wallets[0].escrowBalance || 0,
-      locked: wallets[0].locked || 0,
+      balance: parseFloat(wallets[0].balance || '0'),
+      frozen: parseFloat(wallets[0].frozen || '0'),
     });
 
   } catch (error) {
