@@ -128,15 +128,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <div className="flex items-center gap-4 mt-6">
-          <div className="flex-1 h-px bg-slate-700"></div>
-          <span className="text-slate-500 text-sm">或</span>
-          <div className="flex-1 h-px bg-slate-700"></div>
-        </div>
-
-        <button
-          onClick={handleDiscordLogin}
-          className="w-full mt-6 p-4 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl transition-colors"
+        <p className="text-center text-slate-400 text-sm mt-6">
         >
           <div className="flex items-center justify-center gap-3">
             <svg className="w-8 h-8" viewBox="0 0 24 24" fill="white">
