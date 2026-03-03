@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID || '1478033689853300746';
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET || 'yIpU5iIvNo8C-TeSjm9QD5OHrLbYFszP';
 const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://bb-market-next.vercel.app/api/auth/discord/callback';
 
 export async function GET(request: NextRequest) {
