@@ -19,6 +19,33 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    // 表单验证
+    if (!email.trim()) {
+      setError('请输入邮箱地址');
+      setLoading(false);
+      return;
+    }
+    
+    if (!password.trim()) {
+      setError('请输入密码');
+      setLoading(false);
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('密码长度至少为6位');
+      setLoading(false);
+      return;
+    }
+
+    // 简单的邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('请输入有效的邮箱地址');
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -29,7 +56,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || '登录失败');
+        setError(data.error || '登录失败，请检查邮箱和密码');
         return;
       }
 
@@ -37,7 +64,7 @@ export default function LoginPage() {
       localStorage.setItem('user', JSON.stringify(data.user));
       router.push('/dashboard');
     } catch (err) {
-      setError('网络错误，请重试');
+      setError('网络错误，请检查网络连接后重试');
     } finally {
       setLoading(false);
     }

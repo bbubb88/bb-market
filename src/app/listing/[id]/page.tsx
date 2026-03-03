@@ -45,23 +45,40 @@ export default function ListingDetailPage() {
 
   useEffect(() => {
     // Check login status client-side only
-    const token = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null;
-    const userData = typeof window !== 'undefined' ? localStorage.getItem('user') : null;
-    setIsLoggedIn(!!token);
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    const checkAuth = () => {
+      const token = localStorage.getItem('access_token');
+      const userDataStr = localStorage.getItem('user');
+      
+      setIsLoggedIn(!!token);
+      
+      if (userDataStr) {
+        try {
+          const userData = JSON.parse(userDataStr);
+          setUser(userData);
+        } catch (e) {
+          console.error('Failed to parse user data:', e);
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+    
+    // Run immediately
+    checkAuth();
+    
+    // Also listen for storage changes (for when user logs in/out in another tab)
+    window.addEventListener('storage', checkAuth);
+    return () => window.removeEventListener('storage', checkAuth);
   }, []);
 
   // 立即购买
   const handleBuy = async () => {
     console.log('handleBuy called, isLoggedIn:', isLoggedIn, 'user:', user);
     
-    if (!isLoggedIn) {
-      setShowLoginPrompt(true);
-      setError('');
-      setSuccessMessage('');
-      setOrderCreated(false);
+    if (!isLoggedIn || !user?.id) {
+      // 直接跳转到登录页
+      router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
       return;
     }
 

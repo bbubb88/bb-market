@@ -28,8 +28,23 @@ export async function POST(request: NextRequest) {
     const data = await response.json();
 
     if (!response.ok) {
+      // 更友好的错误消息
+      let errorMessage = '登录失败，请检查邮箱和密码';
+      
+      if (data.error_description) {
+        if (data.error_description.includes('Invalid login credentials')) {
+          errorMessage = '邮箱或密码错误，请重新输入';
+        } else if (data.error_description.includes('Email not confirmed')) {
+          errorMessage = '请先验证您的邮箱后再登录';
+        } else if (data.error_description.includes('Too many requests')) {
+          errorMessage = '登录尝试次数过多，请稍后再试';
+        } else {
+          errorMessage = data.error_description;
+        }
+      }
+      
       return NextResponse.json(
-        { error: data.error_description || 'Login failed' },
+        { error: errorMessage },
         { status: response.status }
       );
     }

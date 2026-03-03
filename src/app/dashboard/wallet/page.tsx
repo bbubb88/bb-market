@@ -34,8 +34,17 @@ export default function WalletPage() {
   const [showDepositModal, setShowDepositModal] = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   
-  const user = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('user') || '{}') : null;
-  const userId = user?.id || null;
+  const userId = (() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const userStr = localStorage.getItem('user');
+      if (!userStr) return null;
+      const user = JSON.parse(userStr);
+      return user?.id || null;
+    } catch {
+      return null;
+    }
+  })();
 
   useEffect(() => {
     if (userId) {

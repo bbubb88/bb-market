@@ -62,12 +62,28 @@ export default function CreateListingPage() {
   const loadGames = async () => {
     setLoading(true);
     try {
-      const { data } = await db.getGames();
-      if (data) {
+      const { data, error } = await db.getGames();
+      if (error) {
+        console.error('Failed to load games from DB:', error);
+      }
+      if (data && data.length > 0) {
         setGames(data.filter((g: Game) => g.status === 'ACTIVE'));
+      } else {
+        // 使用默认游戏列表作为后备
+        setGames([
+          { id: 'hit2', name: 'HIT 2', nameKo: 'HIT 2', icon: '🎮', iconUrl: null, status: 'ACTIVE' },
+          { id: 'brawl', name: 'Brawl Stars', nameKo: '브롤스타즈', icon: '⚔️', iconUrl: null, status: 'ACTIVE' },
+          { id: 'genshin', name: '原神', nameKo: '원신', icon: '🗡️', iconUrl: null, status: 'ACTIVE' },
+        ]);
       }
     } catch (error) {
       console.error('Failed to load games:', error);
+      // 使用默认游戏列表作为后备
+      setGames([
+        { id: 'hit2', name: 'HIT 2', nameKo: 'HIT 2', icon: '🎮', iconUrl: null, status: 'ACTIVE' },
+        { id: 'brawl', name: 'Brawl Stars', nameKo: '브롤스타즈', icon: '⚔️', iconUrl: null, status: 'ACTIVE' },
+        { id: 'genshin', name: '原神', nameKo: '원신', icon: '🗡️', iconUrl: null, status: 'ACTIVE' },
+      ]);
     }
     setLoading(false);
   };
