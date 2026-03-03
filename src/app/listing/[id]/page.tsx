@@ -433,12 +433,6 @@ export default function ListingDetailPage() {
                   </div>
                 </div>
               </div>
-                  
-                  <p className="text-amber-400 text-xs mt-3">
-                    ⚡ 联系时请注明商品ID: {listing.id}
-                  </p>
-                </div>
-              )}
               
               {/* Security */}
               <div className="pt-6 border-t border-slate-700 space-y-3">
