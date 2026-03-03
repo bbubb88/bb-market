@@ -45,6 +45,38 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 确保用户存在，如果不存在则创建
+    let validBuyerId = buyerId;
+    const userCheck = await fetch(
+      `${SUPABASE_URL}/rest/v1/User?id=eq.${buyerId}`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+        },
+      }
+    );
+    const existingUsers = await userCheck.json();
+    if (!existingUsers || existingUsers.length === 0) {
+      // 创建新用户
+      const createUser = await fetch(
+        `${SUPABASE_URL}/rest/v1/User`,
+        {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json',
+            'Prefer': 'return=minimal',
+          },
+          body: JSON.stringify({
+            id: buyerId,
+            email: buyerId + '@temp.local',
+          }),
+        }
+      );
+    }
+
     // 获取所有商品信息
     const listingIds = orderItems.map(item => String(item.listingId)).join(',');
     const listingRes = await fetch(
