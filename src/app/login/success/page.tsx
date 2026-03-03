@@ -8,33 +8,53 @@ export default function LoginSuccessPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Supabase OAuth 回调会将 token 放在 URL hash 中
-    // 格式: #access_token=xxx&refresh_token=xxx&expires_in=xxx&token_type=bearer
-    const hash = window.location.hash.substring(1); // 去掉 #
-    const params = new URLSearchParams(hash);
+    // 从 URL query 参数获取 token（我们的 API 回调方式）
+    const searchParams = new URLSearchParams(window.location.search);
     
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
-    const expiresIn = params.get('expires_in');
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
+    const userJson = searchParams.get('user');
 
     if (!accessToken) {
-      // 如果没有 token，可能是用户取消了或者出错了
-      setError('登录失败，请重试');
+      // 如果没有 token，检查 hash（Supabase 直接回调方式）
+      const hash = window.location.hash.substring(1);
+      const hashParams = new URLSearchParams(hash);
+      const hashAccessToken = hashParams.get('access_token');
+      const hashRefreshToken = hashParams.get('refresh_token');
+      
+      if (!hashAccessToken) {
+        setError('登录失败，请重试');
+        return;
+      }
+      
+      // 保存 hash 中的 token
+      localStorage.setItem('access_token', hashAccessToken);
+      if (hashRefreshToken) {
+        localStorage.setItem('refresh_token', hashRefreshToken);
+      }
+      
+      // 获取用户信息
+      fetchUserInfo(hashAccessToken);
       return;
     }
 
-    // 保存 token 到 localStorage
+    // 保存 query 参数中的 token
     localStorage.setItem('access_token', accessToken);
     if (refreshToken) {
       localStorage.setItem('refresh_token', refreshToken);
     }
-    if (expiresIn) {
-      localStorage.setItem('token_expires_in', expiresIn);
+    if (userJson) {
+      try {
+        const userData = JSON.parse(decodeURIComponent(userJson));
+        localStorage.setItem('user', JSON.stringify(userData));
+      } catch (e) {
+        console.error('Parse user error:', e);
+      }
     }
 
-    // 获取用户信息
-    fetchUserInfo(accessToken);
-  }, []);
+    // 跳转到 dashboard
+    router.push('/dashboard');
+  }, [router]);
 
   const fetchUserInfo = async (accessToken: string) => {
     try {
