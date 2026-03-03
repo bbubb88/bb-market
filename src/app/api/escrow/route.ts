@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
         { error: 'Missing action parameter' },
         { status: 400 }
       );
+    }
 
     switch (action) {
       case 'deposit':

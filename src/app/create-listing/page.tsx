@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { db } from '@/lib/supabase';
 import Link from 'next/link';
@@ -23,7 +23,7 @@ interface Server {
   zone: string | null;
 }
 
-export default function CreateListingPage() {
+function CreateListingContent() {
   const { language, t } = useI18n();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -461,5 +461,24 @@ export default function CreateListingPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <div className="text-center">
+        <div className="text-4xl mb-4">⏳</div>
+        <p className="text-slate-400">加载中...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function CreateListingPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <CreateListingContent />
+    </Suspense>
   );
 }

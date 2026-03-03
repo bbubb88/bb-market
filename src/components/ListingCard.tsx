@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // Currency rates
 const exchangeRates: Record<string, number> = {
@@ -65,17 +66,35 @@ interface ListingCardProps {
 export default function ListingCard({ listing }: ListingCardProps) {
   const { language, t } = useI18n();
   const [currency, setCurrency] = useState('USDT');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setCurrency(getCurrency());
     const handleStorage = () => setCurrency(getCurrency());
     window.addEventListener('storage', handleStorage);
     const interval = setInterval(() => setCurrency(getCurrency()), 500);
+    
+    // Check login status
+    const token = localStorage.getItem('access_token');
+    setIsLoggedIn(!!token);
+    
     return () => {
       window.removeEventListener('storage', handleStorage);
       clearInterval(interval);
     };
   }, []);
+
+  const handleBuyClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!isLoggedIn) {
+      // 未登录，跳转到登录页面
+      router.push('/login?redirect=' + encodeURIComponent(`/listing/${listing.id}`));
+      return;
+    }
+    // 已登录，跳转到商品详情页
+    router.push(`/listing/${listing.id}`);
+  };
 
   const title = language === 'ko' ? listing.titleKo : listing.title;
   const description = language === 'ko' ? listing.descriptionKo : listing.description;
@@ -180,7 +199,7 @@ export default function ListingCard({ listing }: ListingCardProps) {
             </div>
             <button 
               className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-600/20 hover:shadow-violet-500/40 active:scale-95"
-              onClick={(e) => e.preventDefault()}
+              onClick={handleBuyClick}
             >
               {language === 'ko' ? '구매' : '购买'}
             </button>

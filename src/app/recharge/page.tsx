@@ -16,6 +16,12 @@ interface RechargeRecord {
   createdAt: string;
   expiresAt: string;
   screenshotUrl?: string;
+  // NowPayments 字段
+  nowpaymentsId?: number;
+  payAmount?: number;
+  payCurrency?: string;
+  qrCodeUrl?: string;
+  fallback?: boolean;
 }
 
 function RechargeContent() {
@@ -45,7 +51,7 @@ function RechargeContent() {
     setLoading(false);
   }, []);
 
-  // 生成充值记录
+  // 生成充值记录 - 优先使用 NowPayments
   const createRechargeRecord = useCallback(async () => {
     if (!user || !amount || parseFloat(amount) <= 0) return;
 
@@ -54,7 +60,8 @@ function RechargeContent() {
       // 解析订单ID列表
       const orderIds = orderIdsParam ? orderIdsParam.split(',') : [];
       
-      const res = await fetch('/api/recharge/create', {
+      // 优先尝试 NowPayments API
+      const nowpaymentsRes = await fetch('/api/recharge/nowpayments/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,12 +71,41 @@ function RechargeContent() {
         }),
       });
 
-      const data = await res.json();
-      if (res.ok) {
+      let data;
+      let usedNowPayments = false;
+      
+      if (nowpaymentsRes.ok) {
+        data = await nowpaymentsRes.json();
+        usedNowPayments = !data.fallback;
+        console.log('[Recharge] Using NowPayments:', usedNowPayments);
+      }
+
+      // 如果 NowPayments 失败，使用传统方式
+      if (!usedNowPayments) {
+        const res = await fetch('/api/recharge/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            amount: parseFloat(amount),
+            orderIds: orderIds.length > 0 ? orderIds : undefined,
+          }),
+        });
+        data = await res.json();
+      }
+
+      if (data) {
         setRecord(data);
-        // 生成二维码 URL
-        const usdtAmount = parseFloat(amount);
-        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=trc20:${USDT_ADDRESS}?amount=${usdtAmount}&color=ffffff&bgcolor=1a1a2e`);
+        
+        // 使用 NowPayments 返回的二维码或生成传统二维码
+        if (data.qrCodeUrl) {
+          setQrCodeUrl(data.qrCodeUrl);
+        } else if (data.address) {
+          const usdtAmount = data.payAmount || parseFloat(amount);
+          setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=trc20:${data.address}?amount=${usdtAmount}&color=ffffff&bgcolor=1a1a2e`);
+        }
+        
+        // 使用 NowPayments 的过期时间或默认时间
         setTimeLeft(EXPIRY_MINUTES * 60);
         setIsExpired(false);
       }
@@ -109,10 +145,38 @@ function RechargeContent() {
 
   // 复制地址
   const copyAddress = () => {
-    navigator.clipboard.writeText(USDT_ADDRESS);
+    // 优先使用 record 中的地址，否则使用默认地址
+    const address = record?.address || USDT_ADDRESS;
+    navigator.clipboard.writeText(address);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  // NowPayments 支付状态轮询
+  useEffect(() => {
+    if (!record?.id || record.fallback) return; // 只对 NowPayments 支付轮询
+
+    const checkStatus = async () => {
+      try {
+        const res = await fetch(`/api/recharge/nowpayments/status?rechargeId=${record.id}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'completed') {
+            // 支付完成，跳转到钱包页面
+            alert(language === 'ko' ? '결제가 완료되었습니다!' : '支付成功！');
+            router.push('/dashboard?tab=wallet');
+          }
+        }
+      } catch (error) {
+        console.error('Status check error:', error);
+      }
+    };
+
+    // 每10秒检查一次支付状态
+    const pollInterval = setInterval(checkStatus, 10000);
+
+    return () => clearInterval(pollInterval);
+  }, [record]);
 
   // 刷新页面重新生成
   const handleRefresh = () => {

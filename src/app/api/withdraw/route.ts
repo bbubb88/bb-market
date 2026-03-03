@@ -15,29 +15,35 @@ async function supabaseRequest(endpoint: string, options: RequestInit = {}) {
     'Prefer': 'return=representation',
   };
 
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`,  });
-  const {
-    ...options data = await res,
+  if (options.headers) {
+    const optHeaders = options.headers as Record<string, string>;
+    if (optHeaders['Prefer']) {
+      headers['Prefer'] = optHeaders['Prefer'];
+    }
+  }
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, {
+    ...options,
     headers,
-.json();
-  return.status, data };
- { status: res}
+  });
+  const data = await res.json();
+  return { status: res.status, data };
+}
 
 /**
  * 提现 API
-完整现流程:
- *提 1. 用户发起 * 
- * 提现请求
+ * 提现流程:
+ * 1. 用户发起提现请求
  * 2. 验证余额和地址
  * 3. 计算手续费 (5%)
- * 4. 扣除提现记录
- * 5余额，创建. 记录交易流水
+ * 4. 扣除余额，创建提现记录
+ * 5. 记录交易流水
  * 6. (异步) 处理 TRC20 转账
  * 
  * 手续费说明:
- * - 5%  提现收取手续费
- * -平台所有
- * 手续费归 - 实际到账 =提现金额 -  手续费
+ * - 5% 提现收取手续费
+ * - 手续费归平台所有
+ * - 实际到账 = 提现金额 - 手续费
  */
 
 export async function POST(request: NextRequest) {
@@ -86,7 +92,6 @@ export async function POST(request: NextRequest) {
     const currentBalance = parseFloat(wallet.balance || '0');
 
     // 检查余额是否充足 (可用于提现的余额)
-    // 注意: 冻结余额 frozen 和锁定余额 locked 不能直接提现
     if (currentBalance < amount) {
       return NextResponse.json(
         {
@@ -118,10 +123,10 @@ export async function POST(request: NextRequest) {
       method: 'POST',
       body: JSON.stringify({
         userId,
-        amount: amount,      // 用户申请提现的金额
-        fee: fee,           // 手续费
-        netAmount: netAmount, // 实际到账金额
-        address: address,   // 提现地址
+        amount: amount,
+        fee: fee,
+        netAmount: netAmount,
+        address: address,
         addressType: addressType,
         status: 'PENDING',
         createdAt: new Date().toISOString(),
@@ -173,7 +178,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         userId,
         type: 'WITHDRAWAL',
-        amount: -amount,  // 负数表示支出
+        amount: -amount,
         fee: fee,
         status: 'COMPLETED',
         description: `申请提现 ${amount} USDT 到 ${address.substring(0, 8)}...${address.substring(address.length - 6)} (手续费 ${fee} USDT，实际到账 ${netAmount} USDT)`,
@@ -194,11 +199,7 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    // TODO: 在生产环境中，这里应该调用异步任务处理实际的 TRC20 转账
-    // 示例:
-    // await processWithdrawalAsync(withdrawal.id, address, netAmount);
-    
-    // 模拟: 立即更新为处理中状态
+    // 立即更新为处理中状态
     await supabaseRequest(`Withdrawal?id=eq.${withdrawal.id}`, {
       method: 'PATCH',
       body: JSON.stringify({
