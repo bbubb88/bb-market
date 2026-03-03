@@ -102,16 +102,31 @@ export default function ListingDetailPage() {
     setShowLoginPrompt(false);
 
     try {
-      // 确保 listingId 是数字格式
-      const numericListingId = parseInt(listing.id, 10);
-      console.log('Creating order for listingId:', numericListingId, 'buyerId:', user.id);
+      // 获取用户ID（兼容不同登录方式）
+      const buyerId = user?.id || user?.user_metadata?.sub;
+      const listingId = listing?.id;
       
+      console.log('Creating order - buyerId:', buyerId, 'listingId:', listingId, 'user:', user);
+      
+      if (!buyerId) {
+        setError('用户未登录，请先登录');
+        setBuying(false);
+        router.push('/login?redirect=' + encodeURIComponent(window.location.pathname));
+        return;
+      }
+      
+      if (!listingId) {
+        setError('商品信息无效');
+        setBuying(false);
+        return;
+      }
+
       const res = await fetch('/api/orders/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          listingId: numericListingId,
-          buyerId: user.id,
+          listingId: parseInt(listingId, 10),
+          buyerId: buyerId,
         }),
       });
 
