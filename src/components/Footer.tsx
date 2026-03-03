@@ -17,9 +17,9 @@ export default function Footer() {
       ],
     },
     {
-      title: '联系方式',
+      title: '联系我们',
       links: [
-        { text: '在线客服', href: '/chat' },
+        { text: '💬 AI智能客服', href: '/chat' },
       ],
     },
   ];
