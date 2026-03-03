@@ -43,31 +43,10 @@ export default function LoginPage() {
     }
   };
 
-  // Discord OAuth 登录 - 使用 Supabase 官方 SDK
+  // Discord OAuth 登录 - 直接调用我们的 API
   const handleDiscordLogin = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'discord',
-        options: {
-          redirectTo: `${window.location.origin}/login/success`,
-          scopes: 'email identify',
-        },
-      });
-      
-      if (error) {
-        console.error('Discord login error:', error);
-        setError(`登录失败: ${error.message}`);
-      } else if (data.url) {
-        // 跳转到 Discord
-        window.location.href = data.url;
-      }
-    } catch (err: any) {
-      console.error('Discord login catch error:', err);
-      setError(`登录失败: ${err.message || '未知错误'}`);
-    } finally {
-      setLoading(false);
-    }
+    // 跳转到我们的 Discord 授权 API
+    window.location.href = '/api/auth/discord/callback';
   };
 
   return (
