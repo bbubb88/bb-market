@@ -45,30 +45,19 @@ export default function LoginPage() {
     }
   };
 
-  // Discord OAuth 登录
+  // Discord OAuth 登录 - 直接使用 Supabase
   const handleDiscordLogin = async () => {
     try {
-      // 先调用后端 API 获取授权 URL
       const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bb-market-next.vercel.app';
-      const redirectUri = `${siteUrl}/api/auth/discord/callback`;
+      const redirectUri = `${siteUrl}/login/success`;
       
-      const res = await fetch('/api/auth/discord/authorize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ redirectUri }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.url) {
-        setError('获取授权链接失败，请重试');
-        return;
-      }
-
+      // 使用 Supabase 的 Discord OAuth URL
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
+      const authorizeUrl = `${supabaseUrl}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(redirectUri)}`;
+      
       // 跳转到 Discord 授权页面
-      window.location.href = data.url;
+      window.location.href = authorizeUrl;
     } catch (err) {
-      console.error('Discord login error:', err);
       setError('网络错误，请重试');
     }
   };
