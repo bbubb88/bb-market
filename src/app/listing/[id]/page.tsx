@@ -381,7 +381,7 @@ export default function ListingDetailPage() {
                 onClick={() => setShowContact(!showContact)}
                 className="w-full py-4 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-600 transition-all mb-6"
               >
-                联系平台客服
+                💬 联系卖家
               </button>
 
               {/* Contact Info */}
