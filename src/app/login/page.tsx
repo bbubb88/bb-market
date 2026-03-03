@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
   const { language } = useI18n();
@@ -32,11 +33,8 @@ export default function LoginPage() {
         return;
       }
 
-      // 保存 token
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
-      
-      // 跳转到用户中心
       router.push('/dashboard');
     } catch (err) {
       setError('网络错误，请重试');
@@ -45,22 +43,24 @@ export default function LoginPage() {
     }
   };
 
-  // Discord OAuth 登录 - 使用 Supabase
+  // Discord OAuth 登录 - 使用 Supabase 官方 SDK
   const handleDiscordLogin = async () => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://ytsqawvrgzxgfluuadao.supabase.co';
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://bb-market-next.vercel.app';
-    const redirectUri = `${siteUrl}/login/success`;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'discord',
+      options: {
+        redirectTo: `${window.location.origin}/login/success`,
+      },
+    });
     
-    // 使用 Supabase OAuth 授权 URL
-    const authorizeUrl = `${supabaseUrl}/auth/v1/authorize?provider=discord&redirect_to=${encodeURIComponent(redirectUri)}`;
-    
-    window.location.href = authorizeUrl;
+    if (error) {
+      console.error('Discord login error:', error);
+      setError('Discord登录失败，请重试');
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4">
       <div className="max-w-md w-full">
-        {/* Logo */}
         <div className="text-center mb-8">
           <img src="/logo.svg" alt="BB Market" className="h-16 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-white">
@@ -71,7 +71,6 @@ export default function LoginPage() {
           </p>
         </div>
 
-        {/* Login Form */}
         <div className="space-y-4">
           {error && (
             <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-400 text-sm">
@@ -111,14 +110,12 @@ export default function LoginPage() {
           </form>
         </div>
 
-        {/* Divider */}
         <div className="flex items-center gap-4 mt-6">
           <div className="flex-1 h-px bg-slate-700"></div>
           <span className="text-slate-500 text-sm">或</span>
           <div className="flex-1 h-px bg-slate-700"></div>
         </div>
 
-        {/* Discord Login */}
         <button
           onClick={handleDiscordLogin}
           className="w-full mt-6 p-4 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl transition-colors"
@@ -133,23 +130,17 @@ export default function LoginPage() {
           </div>
         </button>
 
-        {/* Register Link */}
         <p className="text-center text-slate-400 text-sm mt-6">
-          {language === 'ko' 
-            ? '계정이 없나요?' : '没有账号？'}
+          {language === 'ko' ? '계정이 없나요?' : '没有账号？'}
           <Link href="/register" className="text-violet-400 hover:text-violet-300 ml-1">
             {language === 'ko' ? '회원가입' : '立即注册'}
           </Link>
         </p>
 
-        {/* Terms */}
         <p className="text-center text-slate-500 text-sm mt-6">
-          {language === 'ko' 
-            ? '로그インすると，利用規約に同意したことになります'
-            : '登录即表示同意我们的服务条款'}
+          {language === 'ko' ? '로그인하면，利用規約に同意したことになります' : '登录即表示同意我们的服务条款'}
         </p>
 
-        {/* Back */}
         <div className="text-center mt-6">
           <Link href="/" className="text-violet-400 hover:text-violet-300 text-sm">
             ← {language === 'ko' ? '메인으로 돌아가기' : '返回首页'}

@@ -2,42 +2,67 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function LoginSuccessPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const token = searchParams.get('token');
+    // 从 URL hash 中获取 session
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
 
-    if (!token) {
-      setError('登录失败，请重试');
-      return;
-    }
-
-    try {
-      // 解析我们的 session token
-      const userData = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
+    if (accessToken) {
+      // 保存 token
+      localStorage.setItem('access_token', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken);
+      }
       
-      // 保存用户信息
-      localStorage.setItem('access_token', token);
-      localStorage.setItem('user', JSON.stringify({
-        id: userData.discordId,
-        email: userData.email,
-        user_metadata: {
-          full_name: userData.username,
-          avatar_url: userData.avatar ? `https://cdn.discordapp.com/avatars/${userData.discordId}/${userData.avatar}.png` : null
-        }
-      }));
-
-      // 跳转到 dashboard
-      router.push('/dashboard');
-    } catch (e) {
-      console.error('Parse token error:', e);
-      setError('登录失败，请重试');
+      // 获取用户信息
+      fetchUserInfo(accessToken);
+    } else {
+      // 检查是否已经有 session
+      checkSession();
     }
   }, [router]);
+
+  const checkSession = async () => {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (session) {
+        localStorage.setItem('access_token', session.access_token);
+        localStorage.setItem('user', JSON.stringify(session.user));
+        router.push('/dashboard');
+      } else {
+        setError('登录失败，请重试');
+      }
+    } catch (err) {
+      console.error('Check session error:', err);
+      setError('登录失败，请重试');
+    }
+  };
+
+  const fetchUserInfo = async (accessToken: string) => {
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+      
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+        router.push('/dashboard');
+      } else {
+        setError('获取用户信息失败');
+      }
+    } catch (err) {
+      console.error('Fetch user error:', err);
+      setError('登录失败，请重试');
+    }
+  };
 
   if (error) {
     return (
