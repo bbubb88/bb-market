@@ -403,23 +403,36 @@ export default function ListingDetailPage() {
               )}
 
               {/* WhatsApp / Discord / Telegram */}
-                    
-                    <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                      <span className="text-2xl">💬</span>
-                      <div>
-                        <p className="text-white font-medium">WhatsApp客服</p>
-                        <p className="text-slate-400 text-xs">+852 4406 0902</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-                      <span className="text-2xl">✈️</span>
-                      <div>
-                        <p className="text-white font-medium">Telegram客服</p>
-                        <p className="text-slate-400 text-xs">@bbmarket</p>
-                      </div>
-                    </div>
+              <div>
+                <a 
+                  href="https://discord.gg/bbmarket" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-colors mb-3"
+                >
+                  <span className="text-xl">💬</span>
+                  <div>
+                    <p className="text-white font-medium">💬 在线客服 (Discord)</p>
+                    <p className="text-white/70 text-xs">点击进入客服频道</p>
                   </div>
+                </a>
+                    
+                <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg mb-3">
+                  <span className="text-2xl">💬</span>
+                  <div>
+                    <p className="text-white font-medium">WhatsApp客服</p>
+                    <p className="text-slate-400 text-xs">+852 4406 0902</p>
+                  </div>
+                </div>
+                    
+                <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
+                  <span className="text-2xl">✈️</span>
+                  <div>
+                    <p className="text-white font-medium">Telegram客服</p>
+                    <p className="text-slate-400 text-xs">@bbmarket</p>
+                  </div>
+                </div>
+              </div>
                   
                   <p className="text-amber-400 text-xs mt-3">
                     ⚡ 联系时请注明商品ID: {listing.id}
