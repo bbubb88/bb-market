@@ -184,6 +184,48 @@ export default function WalletPage() {
               </div>
             </div>
 
+            {/* 收款地址设置 */}
+            <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700 mb-8">
+              <h3 className="text-xl font-bold text-white mb-4">📮 我的收款地址</h3>
+              <p className="text-slate-400 text-sm mb-4">设置您的USDT收款地址，买家付款后将自动转入此地址</p>
+              
+              <div className="flex gap-4 items-end">
+                <div className="flex-1">
+                  <input 
+                    type="text" 
+                    id="walletAddress"
+                    placeholder="输入您的TRC20钱包地址（以T开头）"
+                    className="w-full px-4 py-3 bg-slate-700 border border-slate-600 rounded-xl text-white"
+                  />
+                </div>
+                <button 
+                  onClick={() => {
+                    const address = (document.getElementById('walletAddress') as HTMLInputElement)?.value;
+                    if (!address) {
+                      alert('请输入收款地址');
+                      return;
+                    }
+                    if (!address.startsWith('T')) {
+                      alert('TRC20地址必须以T开头');
+                      return;
+                    }
+                    localStorage.setItem('user_wallet_address', address);
+                    localStorage.setItem('user_wallet_network', 'TRC20');
+                    alert('收款地址已保存！');
+                  }}
+                  className="px-6 py-3 bg-violet-600 text-white rounded-xl hover:bg-violet-500"
+                >
+                  保存
+                </button>
+              </div>
+              
+              <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+                <p className="text-slate-400 text-sm">
+                  💡 提示：设置收款地址后，买家购买您的商品时，付款将直接转入此地址
+                </p>
+              </div>
+            </div>
+
             {/* Quick Actions */}
             <div className="grid grid-cols-4 gap-4 mb-8">
               <div className="bg-slate-800/50 rounded-xl p-4 border border-slate-700 text-center">
