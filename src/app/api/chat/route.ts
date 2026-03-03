@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+// DeepSeek API Key - 也可以直接写在这里方便调试
+// 生产环境建议用环境变量
+const DEFAULT_DEEPSEEK_KEY = 'sk-4121802f53ba444ca18c732f896742f1';
 
 // 客服系统提示词
 const SYSTEM_PROMPT = `你是 BB Market 的专业智能客服，代表平台形象。
@@ -37,8 +39,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '消息不能为空' }, { status: 400 });
     }
 
-    // 如果没有配置 DeepSeek API，回退到简单回复
-    if (!DEEPSEEK_API_KEY) {
+    // 如果没有配置 DeepSeek API，使用默认Key
+    const apiKey = process.env.DEEPSEEK_API_KEY || DEFAULT_DEEPSEEK_KEY;
+    if (!apiKey) {
       return NextResponse.json({
         success: true,
         reply: '抱歉，AI客服暂时忙碌。请稍后再试或联系 support@bbmarket.com',
@@ -65,16 +68,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      console.error('DeepSeek API error:', error);
-      return NextResponse.json({
-        success: true,
-        reply: 'AI客服暂时忙碌，请稍后再试。',
-        from: 'ai'
-      });
-    }
-
-    const data = await response.json();
     const reply = data.choices?.[0]?.message?.content || '抱歉，我没有理解你的问题。';
 
     return NextResponse.json({
