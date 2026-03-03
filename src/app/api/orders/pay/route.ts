@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { notifySellerOfPayment } from '@/lib/discord';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY!;
@@ -172,7 +173,66 @@ export async function POST(request: NextRequest) {
       }
     );
 
-    // 4. 返回结果
+    // 4. 通知卖家有新订单已付款
+    // 获取每个订单的卖家信息并发送通知
+    for (const order of orders) {
+      // 获取卖家信息
+      const sellerRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/User?id=eq.${order.sellerId}&select=id,discordId,username`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const sellers = await sellerRes.json();
+      
+      // 获取商品信息
+      const listingRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/Listing?id=eq.${order.listingId}&select=id,title`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const listings = await listingRes.json();
+      
+      // 获取买家信息
+      const buyerRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/User?id=eq.${userId}&select=id,username`,
+        {
+          headers: {
+            'apikey': SUPABASE_KEY,
+            'Authorization': `Bearer ${SUPABASE_KEY}`,
+          },
+        }
+      );
+      const buyers = await buyerRes.json();
+      
+      if (sellers && sellers.length > 0 && sellers[0].discordId) {
+        const seller = sellers[0];
+        const listing = listings && listings.length > 0 ? listings[0] : { title: 'Unknown' };
+        const buyer = buyers && buyers.length > 0 ? buyers[0] : { username: 'Unknown' };
+        
+        // 异步发送通知给卖家
+        notifySellerOfPayment(order.id, seller.discordId, {
+          listingTitle: listing.title,
+          price: order.price,
+          buyerUsername: buyer.username || 'Unknown',
+        }).then(success => {
+          if (success) {
+            console.log('Seller notification sent:', seller.discordId);
+          }
+        }).catch(err => {
+          console.error('Failed to send seller notification:', err);
+        });
+      }
+    }
+
+    // 5. 返回结果
     return NextResponse.json({
       success: true,
       message: 'Payment successful',
