@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
 import { db } from '@/lib/supabase';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 interface Game {
   id: string;
@@ -26,6 +26,7 @@ interface Server {
 export default function CreateListingPage() {
   const { language, t } = useI18n();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState(1);
   const [games, setGames] = useState<Game[]>([]);
   const [servers, setServers] = useState<Server[]>([]);
@@ -52,6 +53,19 @@ export default function CreateListingPage() {
   useEffect(() => {
     loadGames();
   }, []);
+
+  // 从 URL 参数获取 gameId 并自动选择
+  useEffect(() => {
+    const gameId = searchParams.get('game');
+    if (gameId && games.length > 0 && !selectedGame) {
+      const game = games.find(g => g.id === gameId);
+      if (game) {
+        setSelectedGame(game.id);
+        setFormData({ ...formData, gameId: game.id });
+        setStep(2);
+      }
+    }
+  }, [searchParams, games]);
 
   useEffect(() => {
     if (selectedGame) {

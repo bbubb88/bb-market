@@ -40,7 +40,12 @@ export default function ListingsPage() {
     try {
       const { data } = await db.getListings({});
       if (data) {
-        const userListings = data.filter((l: any) => l.seller === userId || l.sellerId === userId || l.seller_id === userId);
+        // Supabase 返回的字段是 snake_case: seller_id
+        const userListings = data.filter((l: any) => 
+          l.seller_id === userId || 
+          l.sellerId === userId || 
+          l.seller === userId
+        );
         setListings(userListings);
       }
     } catch (error) {

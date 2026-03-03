@@ -76,7 +76,7 @@ export default function SelectGamePage() {
           {games.map((game) => (
             <Link
               key={game.id}
-              href={`/accounts?game=${game.id}`}
+              href={`/create-listing?game=${game.id}`}
               className="group bg-slate-800/60 rounded-2xl p-8 border border-slate-700 hover:border-violet-500 transition-all hover:-translate-y-2"
             >
               <div className="flex items-center gap-6">
@@ -95,6 +95,13 @@ export default function SelectGamePage() {
                     {servers[game.id]?.length || 0} {language === 'ko' ? '개 서버' : '个服务器'}
                   </p>
                   <div className="flex gap-2">
+                    <Link
+                      href={`/create-listing?game=${game.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-4 py-2 text-sm bg-violet-600/20 text-violet-300 rounded-lg hover:bg-violet-600/30 transition-colors"
+                    >
+                      发布商品
+                    </Link>
                     <Link
                       href={`/accounts?game=${game.id}`}
                       onClick={(e) => e.stopPropagation()}

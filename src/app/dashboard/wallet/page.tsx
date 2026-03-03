@@ -26,43 +26,55 @@ interface RechargeRecord {
 
 export default function WalletPage() {
   const { t } = useI18n();
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState<number>(0);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [rechargeRecords, setRechargeRecords] = useState<RechargeRecord[]>([]);
   const [selectedScreenshot, setSelectedScreenshot] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [showDepositModal, setShowDepositModal] = useState(false);
-  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [showDepositModal, setShowDepositModal] = useState<boolean>(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   
-  const userId = (() => {
-    if (typeof window === 'undefined') return null;
-    try {
-      const userStr = localStorage.getItem('user');
-      if (!userStr) return null;
-      const user = JSON.parse(userStr);
-      return user?.id || null;
-    } catch {
-      return null;
+  // Safe userId extraction - handles SSR and client-side
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          const user = JSON.parse(userStr);
+          setUserId(user?.id || null);
+        } else {
+          setUserId(null);
+        }
+      } catch (e) {
+        console.error('Error parsing user:', e);
+        setUserId(null);
+      }
     }
-  })();
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     if (userId) {
       loadWalletData();
-    } else {
-      setLoading(false);
     }
-  }, []);
+  }, [userId]);
 
   const loadWalletData = async () => {
+    if (!userId) return;
+    
     setLoading(true);
+    setError(null);
     try {
       // 从 API 获取钱包数据
       const res = await fetch(`/api/wallet?userId=${userId}`);
       if (res.ok) {
         const data = await res.json();
-        setBalance(data.balance || 0);
-        setTransactions(data.transactions || []);
+        setBalance(data?.balance || 0);
+        setTransactions(data?.transactions || []);
       } else {
         // 如果没有数据，使用默认值
         setBalance(0);
@@ -74,14 +86,17 @@ export default function WalletPage() {
         const rechargeRes = await fetch(`/api/recharge/list?userId=${userId}`);
         if (rechargeRes.ok) {
           const rechargeData = await rechargeRes.json();
-          setRechargeRecords(rechargeData || []);
+          setRechargeRecords(Array.isArray(rechargeData) ? rechargeData : []);
+        } else {
+          setRechargeRecords([]);
         }
       } catch (e) {
         console.log('Recharge API not available');
         setRechargeRecords([]);
       }
-    } catch (error) {
-      console.log('Wallet API not available, using defaults');
+    } catch (err) {
+      console.error('Wallet load error:', err);
+      setError('加载钱包数据失败');
       setBalance(0);
       setTransactions([]);
       setRechargeRecords([]);
