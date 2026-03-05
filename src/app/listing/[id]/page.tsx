@@ -125,7 +125,7 @@ export default function ListingDetailPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          listingId: parseInt(listingId, 10),
+          listingId: listingId, // 传递原始ID字符串，支持UUID和数字
           buyerId: buyerId,
         }),
       });

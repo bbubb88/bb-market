@@ -14,13 +14,13 @@ export async function POST(request: NextRequest) {
     // 1. 单个商品: { listingId, buyerId }
     // 2. 多个商品: { items: [{ listingId }], buyerId }
     
-    let orderItems: Array<{ listingId: number }> = [];
+    let orderItems: Array<{ listingId: string | number }> = [];
     
     if (items && Array.isArray(items)) {
       // 多个商品格式
-      orderItems = items;
+      orderItems = items.map((item: any) => ({ listingId: String(item.listingId) }));
     } else {
-      // 单个商品格式
+      // 单个商品格式 - 支持UUID和数字ID
       const { listingId } = body;
       if (!listingId || !buyerId) {
         return NextResponse.json(
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         );
       }
-      orderItems = [{ listingId }];
+      orderItems = [{ listingId: String(listingId) }]; // 转换为字符串，支持UUID
     }
 
     if (!buyerId) {
