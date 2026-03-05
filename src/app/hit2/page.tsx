@@ -41,9 +41,45 @@ export default function HIT2Page() {
             </div>
           </Link>
 
-          {/* 挂售 */}
+          {/* 账号 */}
           <Link
-            href="/create-listing"
+            href="/accounts"
+            className="group p-8 bg-gradient-to-br from-violet-600/20 to-purple-600/20 rounded-2xl border border-violet-500/30 hover:border-violet-400 transition-all hover:scale-105"
+          >
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center text-4xl">
+                📋
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {language === 'ko' ? '계정' : '账号'}
+              </h2>
+              <p className="text-slate-400">
+                {language === 'ko' ? '계정 구매' : '账号交易'}
+              </p>
+            </div>
+          </Link>
+
+          {/* 道具 */}
+          <Link
+            href="/items"
+            className="group p-8 bg-gradient-to-br from-cyan-600/20 to-blue-600/20 rounded-2xl border border-cyan-500/30 hover:border-cyan-400 transition-all hover:scale-105"
+          >
+            <div className="text-center">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center text-4xl">
+                🎁
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {language === 'ko' ? '아이템' : '道具'}
+              </h2>
+              <p className="text-slate-400">
+                {language === 'ko' ? '아이템 구매' : '道具交易'}
+              </p>
+            </div>
+          </Link>
+
+          {/* 游戏币 */}
+          <Link
+            href="/coins"
             className="group p-8 bg-gradient-to-br from-amber-600/20 to-orange-600/20 rounded-2xl border border-amber-500/30 hover:border-amber-400 transition-all hover:scale-105"
           >
             <div className="text-center">
@@ -51,10 +87,10 @@ export default function HIT2Page() {
                 💰
               </div>
               <h2 className="text-2xl font-bold text-white mb-2">
-                {language === 'ko' ? '판매' : '挂售'}
+                {language === 'ko' ? '게임화학' : '游戏币'}
               </h2>
               <p className="text-slate-400">
-                {language === 'ko' ? '계정, 아이템, 게임화폐 판매' : '发布账号、道具、游戏币'}
+                {language === 'ko' ? '골드 구매' : '游戏币交易'}
               </p>
             </div>
           </Link>
