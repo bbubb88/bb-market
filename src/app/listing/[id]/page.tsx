@@ -319,14 +319,46 @@ export default function ListingDetailPage() {
               </div>
               
               {/* Actions */}
-              <button 
-                type="button"
-                onClick={handleBuy}
-                disabled={buying || !listing || listing.status !== 'SELLING'}
-                className="w-full py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all mb-3 shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {buying ? '⏳ 处理中...' : !listing ? '加载中...' : listing.status !== 'SELLING' ? '已下架' : '立即购买'}
-              </button>
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => {
+                    if (!listing) return;
+                    const cartItem = {
+                      id: `cart-${listing.id}-${Date.now()}`,
+                      listingId: listing.id,
+                      title: listing.title,
+                      titleKo: listing.titleKo || null,
+                      price: listing.price,
+                      image: listing.images?.[0] || '📦',
+                      type: listing.type,
+                      quantity: 1,
+                      addedAt: new Date().toISOString(),
+                    };
+                    const existingCart = localStorage.getItem('bbmarket_cart');
+                    const cart = existingCart ? JSON.parse(existingCart) : [];
+                    const existingIndex = cart.findIndex((item: any) => item.listingId === listing.id);
+                    if (existingIndex >= 0) {
+                      cart[existingIndex].quantity += 1;
+                    } else {
+                      cart.push(cartItem);
+                    }
+                    localStorage.setItem('bbmarket_cart', JSON.stringify(cart));
+                    alert(language === 'ko' ? '장바구니에 추가되었습니다!' : '已加入购物车！');
+                  }}
+                  className="flex-1 py-4 bg-slate-700 text-white font-semibold rounded-xl hover:bg-slate-600 transition-all"
+                >
+                  🛒 {language === 'ko' ? '장바구니' : '加入购物车'}
+                </button>
+                <button 
+                  type="button"
+                  onClick={handleBuy}
+                  disabled={buying || !listing || listing.status !== 'SELLING'}
+                  className="flex-1 py-4 bg-gradient-to-r from-violet-600 to-purple-600 text-white font-semibold rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {buying ? '⏳ 处理中...' : !listing ? '加载中...' : listing.status !== 'SELLING' ? '已下架' : '立即购买'}
+                </button>
+              </div>
 
               {error && (
                 <div className="mb-3 p-3 bg-red-900/30 border border-red-500/50 rounded-xl text-red-400 text-sm">

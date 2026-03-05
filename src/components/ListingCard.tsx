@@ -88,12 +88,45 @@ export default function ListingCard({ listing }: ListingCardProps) {
   const handleBuyClick = (e: React.MouseEvent) => {
     e.preventDefault();
     if (!isLoggedIn) {
-      // 未登录，跳转到登录页面
       router.push('/login?redirect=' + encodeURIComponent(`/listing/${listing.id}`));
       return;
     }
-    // 已登录，跳转到商品详情页
     router.push(`/listing/${listing.id}`);
+  };
+
+  // 加入购物车
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const cartItem = {
+      id: `cart-${listing.id}-${Date.now()}`,
+      listingId: listing.id,
+      title: listing.title,
+      titleKo: listing.titleKo || null,
+      price: listing.price,
+      image: listing.images?.[0] || '📦',
+      type: listing.type,
+      quantity: 1,
+      addedAt: new Date().toISOString(),
+    };
+    
+    // 从localStorage获取现有购物车
+    const existingCart = localStorage.getItem('bbmarket_cart');
+    const cart = existingCart ? JSON.parse(existingCart) : [];
+    
+    // 检查是否已存在
+    const existingIndex = cart.findIndex((item: any) => item.listingId === listing.id);
+    if (existingIndex >= 0) {
+      cart[existingIndex].quantity += 1;
+    } else {
+      cart.push(cartItem);
+    }
+    
+    localStorage.setItem('bbmarket_cart', JSON.stringify(cart));
+    
+    // 提示成功
+    alert(language === 'ko' ? '장바구니에 추가되었습니다!' : '已加入购物车！');
   };
 
   const title = language === 'ko' ? listing.titleKo : listing.title;
@@ -197,12 +230,21 @@ export default function ListingCard({ listing }: ListingCardProps) {
                 {displayPrice}
               </span>
             </div>
-            <button 
-              className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-600/20 hover:shadow-violet-500/40 active:scale-95"
-              onClick={handleBuyClick}
-            >
-              {language === 'ko' ? '구매' : '购买'}
-            </button>
+            <div className="flex gap-2">
+              <button 
+                className="px-3 py-2.5 text-lg bg-slate-700 hover:bg-slate-600 rounded-xl transition-all"
+                onClick={handleAddToCart}
+                title={language === 'ko' ? '장바구니에 추가' : '加入购物车'}
+              >
+                🛒
+              </button>
+              <button 
+                className="px-5 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-purple-600 rounded-xl hover:from-violet-500 hover:to-purple-500 transition-all shadow-lg shadow-violet-600/20 hover:shadow-violet-500/40 active:scale-95"
+                onClick={handleBuyClick}
+              >
+                {language === 'ko' ? '구매' : '购买'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
