@@ -10,6 +10,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "BB Market - HIT2 账号道具交易平台",
   description: "安全、快捷、可信的游戏账号道具交易平台 | HIT2 계정 및 아이템 거래 플랫폼",
+  other: {
+    "cryptomus": "bca18b2b",
+  },
 };
 
 export default function RootLayout({
