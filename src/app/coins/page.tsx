@@ -1,26 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { listings, games } from '@/data/games';
+import { db } from '@/lib/supabase';
+import { games } from '@/data/games';
 import ListingCard from '@/components/ListingCard';
 
 export default function CoinsPage() {
   const { language, t } = useI18n();
   const [selectedServer, setSelectedServer] = useState('');
   const [sortBy, setSortBy] = useState('latest');
-  
-  const coins = listings.filter(l => l.type === 'coin');
-  
+  const [coins, setCoins] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadCoins();
+  }, []);
+
+  const loadCoins = async () => {
+    setLoading(true);
+    try {
+      const { data } = await db.getListings({ 
+        status: 'SELLING'
+      });
+      
+      if (data) {
+        // 过滤出coins类型
+        const coinList = data.filter((item: any) => 
+          item.type?.toLowerCase() === 'coin' || item.type?.toLowerCase() === 'coins'
+        );
+        setCoins(coinList);
+      }
+    } catch (error) {
+      console.error('Failed to load coins:', error);
+    }
+    setLoading(false);
+  };
+
   let filtered = coins;
   if (selectedServer) {
-    filtered = filtered.filter(l => l.server === selectedServer);
+    filtered = filtered.filter((l: any) => l.serverId === selectedServer);
   }
   
   if (sortBy === 'price-low') {
-    filtered = [...filtered].sort((a, b) => a.price - b.price);
+    filtered = [...filtered].sort((a: any, b: any) => a.price - b.price);
   } else if (sortBy === 'price-high') {
-    filtered = [...filtered].sort((a, b) => b.price - a.price);
+    filtered = [...filtered].sort((a: any, b: any) => b.price - a.price);
+  } else {
+    filtered = [...filtered].sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   return (
@@ -42,7 +71,7 @@ export default function CoinsPage() {
             className="px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white focus:outline-none focus:border-violet-500"
           >
             <option value="">{language === 'ko' ? '전체 서버' : '全部服务器'}</option>
-            {games[0].servers.map((server) => (
+            {games[0]?.servers?.map((server) => (
               <option key={server.id} value={server.id}>
                 {language === 'ko' ? server.nameKo : server.name}
               </option>
@@ -74,13 +103,20 @@ export default function CoinsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {filtered.map((listing) => (
-            <ListingCard key={listing.id} listing={listing} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-16 text-slate-400">
+            <p className="text-4xl mb-4">⏳</p>
+            <p>加载中...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filtered.map((listing) => (
+              <ListingCard key={listing.id} listing={listing} />
+            ))}
+          </div>
+        )}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !loading && (
           <div className="text-center py-16 text-slate-400">
             <p className="text-4xl mb-4">📭</p>
             <p>{language === 'ko' ? '검색 결과가 없습니다' : '暂无商品'}</p>
