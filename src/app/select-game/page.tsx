@@ -76,7 +76,7 @@ export default function SelectGamePage() {
           {games.map((game) => (
             <Link
               key={game.id}
-              href={`/create-listing?game=${game.id}`}
+              href={`/accounts?game=${game.id}`}
               className="group bg-slate-800/60 rounded-2xl p-8 border border-slate-700 hover:border-violet-500 transition-all hover:-translate-y-2"
             >
               <div className="flex items-center gap-6">
