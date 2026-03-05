@@ -188,9 +188,15 @@ export default function ListingDetailPage() {
       }
 
       // 如果静态数据没有，尝试从 Supabase 获取
-      const { data } = await db.getListing(listingId);
-      if (data) {
-        setListing(data);
+      console.log('Loading listing from Supabase, ID:', listingId);
+      const result = await db.getListing(listingId);
+      console.log('Supabase result:', result);
+      
+      if (result?.data) {
+        console.log('Setting listing data:', result.data);
+        setListing(result.data);
+      } else if (result?.error) {
+        console.error('Supabase error:', result.error);
       }
     } catch (error) {
       console.error('Failed to load listing:', error);
