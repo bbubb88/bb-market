@@ -1,26 +1,55 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useI18n } from '@/lib/i18n';
-import { listings, games } from '@/data/games';
+import { db } from '@/lib/supabase';
+import { games } from '@/data/games';
 import ListingCard from '@/components/ListingCard';
 
 export default function ItemsPage() {
   const { language, t } = useI18n();
   const [selectedServer, setSelectedServer] = useState('');
   const [sortBy, setSortBy] = useState('latest');
-  
-  const items = listings.filter(l => l.type === 'item');
-  
+  const [items, setItems] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadItems();
+  }, []);
+
+  const loadItems = async () => {
+    setLoading(true);
+    try {
+      const { data } = await db.getListings({ 
+        status: 'SELLING'
+      });
+      
+      if (data) {
+        // 过滤出item类型
+        const itemList = data.filter((item: any) => 
+          item.type?.toLowerCase() === 'item'
+        );
+        setItems(itemList);
+      }
+    } catch (error) {
+      console.error('Failed to load items:', error);
+    }
+    setLoading(false);
+  };
+
   let filtered = items;
   if (selectedServer) {
-    filtered = filtered.filter(l => l.server === selectedServer || l.server === 'all');
+    filtered = filtered.filter((l: any) => l.serverId === selectedServer);
   }
   
   if (sortBy === 'price-low') {
-    filtered = [...filtered].sort((a, b) => a.price - b.price);
+    filtered = [...filtered].sort((a: any, b: any) => a.price - b.price);
   } else if (sortBy === 'price-high') {
-    filtered = [...filtered].sort((a, b) => b.price - a.price);
+    filtered = [...filtered].sort((a: any, b: any) => b.price - a.price);
+  } else {
+    filtered = [...filtered].sort((a: any, b: any) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   }
 
   return (
@@ -42,12 +71,12 @@ export default function ItemsPage() {
             {/* Quick Stats */}
             <div className="flex gap-4">
               <div className="px-4 py-2 bg-slate-800/60 rounded-xl border border-slate-700/50">
-                <div className="text-2xl font-bold text-violet-400">{items.length}</div>
+                <div className="text-2xl font-bold text-violet-400">{loading ? '...' : filtered.length}</div>
                 <div className="text-xs text-slate-500">{language === 'ko' ? '총 상품' : '商品总数'}</div>
               </div>
               <div className="px-4 py-2 bg-slate-800/60 rounded-xl border border-slate-700/50">
                 <div className="text-2xl font-bold text-emerald-400">
-                  {items.filter(i => i.badge === '热门' || i.badge === '限时').length}
+                  {loading ? '...' : filtered.filter((i: any) => i.badge === '热门' || i.badge === 'hot').length}
                 </div>
                 <div className="text-xs text-slate-500">{language === 'ko' ? '핫 상품' : '热卖商品'}</div>
               </div>
@@ -64,7 +93,7 @@ export default function ItemsPage() {
               className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-xl text-white focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all"
             >
               <option value="">{language === 'ko' ? '전체 서버' : '全部服务器'}</option>
-              {games[0].servers.slice(0, 10).map((server) => (
+              {games[0]?.servers?.slice(0, 10).map((server) => (
                 <option key={server.id} value={server.id}>
                   {language === 'ko' ? server.nameKo : server.name}
                 </option>
@@ -84,20 +113,27 @@ export default function ItemsPage() {
           </select>
         </div>
 
-        {/* Items Grid - Enhanced */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((listing, index) => (
-            <div 
-              key={listing.id} 
-              className="animate-fadeIn" 
-              style={{ animationDelay: `${index * 0.05}s` }}
-            >
-              <ListingCard listing={listing} />
-            </div>
-          ))}
-        </div>
+        {/* Items Grid */}
+        {loading ? (
+          <div className="text-center py-16 text-slate-400">
+            <p className="text-4xl mb-4">⏳</p>
+            <p>加载中...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filtered.map((listing, index) => (
+              <div 
+                key={listing.id} 
+                className="animate-fadeIn" 
+                style={{ animationDelay: `${index * 0.05}s` }}
+              >
+                <ListingCard listing={listing} />
+              </div>
+            ))}
+          </div>
+        )}
 
-        {filtered.length === 0 && (
+        {filtered.length === 0 && !loading && (
           <div className="text-center py-16">
             <div className="w-24 h-24 mx-auto mb-4 bg-slate-800/60 rounded-full flex items-center justify-center">
               <p className="text-4xl">📭</p>
